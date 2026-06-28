@@ -12,11 +12,6 @@ import {
   type TestResult,
 } from './api';
 
-// ponytail: checked once at module load — client-only Vite bundle
-const prefersReducedMotion =
-  typeof window !== 'undefined' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 const ESRI_SAT =
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -39,21 +34,6 @@ function computeStats(features: GeoJSONFeature[]): Stats {
     if (typeof f.properties.area_ha === 'number') totalHa += f.properties.area_ha;
   }
   return { count: features.length, totalHa, municipalities: munis.size };
-}
-
-function makeSatStyle(): StyleSpecification {
-  return {
-    version: 8,
-    sources: {
-      sat: {
-        type: 'raster',
-        tiles: [ESRI_SAT],
-        tileSize: 256,
-        attribution: 'Tiles &copy; Esri — World Imagery',
-      },
-    },
-    layers: [{ id: 'sat-bg', type: 'raster', source: 'sat' }],
-  };
 }
 
 // Basemap único com satélite + OSM; alterna por visibilidade (sem recriar estilo).
@@ -214,6 +194,9 @@ export function App() {
       <TopBar />
       <main>
         <HeroSection features={features} stats={stats} />
+        <MeasurementTechSection />
+        <JourneySection />
+        <PropertyShowcaseSection features={features} loading={mapLoading} />
         <MapSection features={features} loading={mapLoading} error={mapError} />
         <ApiSection />
         <ReportSection />
@@ -370,71 +353,700 @@ function HeroSection({ features, stats }: { features: GeoJSONFeature[]; stats: S
           )}
         </div>
 
-        <div className="relative hidden lg:block">
-          <div className="relative z-10 overflow-hidden rounded-3xl border-8 border-white shadow-2xl">
-            <div className="aspect-[4/3] w-full bg-primary/5">
-              <HeroMap features={features} />
+        <AppMockup />
+      </div>
+    </section>
+  );
+}
+
+// =====================================================================
+// AppMockup — phone frame reproduzindo a tela de medição do CAR Campo
+// =====================================================================
+
+const POLY_VERTS: ReadonlyArray<readonly [number, number, number]> = [
+  [70, 30, 1],
+  [185, 20, 2],
+  [220, 75, 3],
+  [195, 175, 4],
+  [95, 185, 5],
+  [40, 128, 6],
+];
+const POLY_POINTS = POLY_VERTS.map(([x, y]) => `${x},${y}`).join(' ');
+
+const APP_NAV = [
+  { icon: '📊', label: 'Dashboard', active: false },
+  { icon: '📍', label: 'Medições', active: true },
+  { icon: '📄', label: 'Documentos', active: false },
+  { icon: '👤', label: 'Perfil', active: false },
+] as const;
+
+function AppMockup() {
+  return (
+    <div className="relative hidden flex-col items-center lg:flex" aria-hidden="true">
+      {/* Glows */}
+      <div className="pointer-events-none absolute -right-12 -top-12 -z-10 h-64 w-64 rounded-full bg-secondary-container/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 -left-12 -z-10 h-64 w-64 rounded-full bg-primary-fixed/50 blur-3xl" />
+
+      <p className="mb-4 text-center text-sm font-semibold text-on-surface-variant">
+        Seus terrenos e documentações na palma da mão.
+      </p>
+
+      {/* Phone shell */}
+      <div
+        style={{
+          width: 275,
+          height: 576,
+          background: '#0e1b12',
+          borderRadius: 44,
+          border: '10px solid #1a2e22',
+          boxShadow:
+            '0 32px 64px rgba(0,0,0,0.38), 0 8px 24px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.06)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          flexShrink: 0,
+          userSelect: 'none',
+        }}
+      >
+        {/* Notch */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 80,
+            height: 22,
+            background: '#0e1b12',
+            borderRadius: '0 0 14px 14px',
+            zIndex: 20,
+          }}
+        />
+
+        {/* Status bar */}
+        <div
+          style={{
+            height: 36,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            padding: '0 20px 5px',
+          }}
+        >
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>9:41</span>
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            {/* Signal bars */}
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+              <rect x="0" y="6" width="2.5" height="4" rx="0.5" fill="rgba(255,255,255,0.6)" />
+              <rect x="3.5" y="4" width="2.5" height="6" rx="0.5" fill="rgba(255,255,255,0.6)" />
+              <rect x="7" y="2" width="2.5" height="8" rx="0.5" fill="rgba(255,255,255,0.6)" />
+              <rect x="10.5" y="0" width="2.5" height="10" rx="0.5" fill="rgba(255,255,255,0.6)" />
+            </svg>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>4G</span>
+            {/* Battery */}
+            <svg width="22" height="11" viewBox="0 0 22 11" fill="none">
+              <rect x="0.5" y="0.5" width="18" height="10" rx="2" stroke="rgba(255,255,255,0.45)" />
+              <rect x="19.5" y="3" width="2" height="5" rx="1" fill="rgba(255,255,255,0.45)" />
+              <rect x="1.5" y="1.5" width="13" height="8" rx="1.5" fill="rgba(255,255,255,0.6)" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Top bar */}
+        <div
+          style={{
+            padding: '5px 14px 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50% 50% 50% 7px',
+                background: '#2d6a4f',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+              }}
+            >
+              🌿
+            </div>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>
+              CAR Campo
+            </span>
+          </div>
+          <div
+            style={{
+              background: '#1d5a3e',
+              borderRadius: 20,
+              padding: '2px 10px',
+              fontSize: 10,
+              color: '#86efac',
+              fontWeight: 700,
+              border: '1px solid rgba(134,239,172,0.25)',
+            }}
+          >
+            2 / 4
+          </div>
+        </div>
+
+        {/* Info card */}
+        <div
+          style={{
+            margin: '9px 10px 6px',
+            background: 'rgba(255,255,255,0.08)',
+            borderRadius: 14,
+            padding: '10px 12px',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div
+                style={{
+                  fontSize: 7,
+                  color: 'rgba(255,255,255,0.5)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  fontWeight: 700,
+                  marginBottom: 2,
+                }}
+              >
+                ÁREA ATUAL
+              </div>
+              <div
+                style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}
+              >
+                39,8 ha
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div
+                style={{
+                  fontSize: 7,
+                  color: 'rgba(255,255,255,0.5)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 2,
+                }}
+              >
+                Perímetro
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#86efac' }}>2.405 m</div>
             </div>
           </div>
-          <div className="absolute -right-12 -top-12 -z-10 h-64 w-64 rounded-full bg-secondary-container/40 blur-3xl" />
-          <div className="absolute -bottom-12 -left-12 -z-10 h-64 w-64 rounded-full bg-primary-fixed/50 blur-3xl" />
+        </div>
+
+        {/* GPS chips */}
+        <div style={{ display: 'flex', gap: 6, padding: '0 10px 7px' }}>
+          <div
+            style={{
+              flex: 1,
+              background: 'rgba(34,197,94,0.12)',
+              border: '1px solid rgba(34,197,94,0.25)',
+              borderRadius: 20,
+              padding: '5px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span style={{ fontSize: 11 }}>🎯</span>
+            <span style={{ fontSize: 8.5, color: '#86efac', fontWeight: 600 }}>Precisão GPS · 1,2 m</span>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              background: 'rgba(251,191,36,0.1)',
+              border: '1px solid rgba(251,191,36,0.2)',
+              borderRadius: 20,
+              padding: '5px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span style={{ fontSize: 11 }}>📳</span>
+            <span style={{ fontSize: 8.5, color: '#fcd34d', fontWeight: 600 }}>Aceler. · Estável</span>
+          </div>
+        </div>
+
+        {/* Map area with SVG polygon */}
+        <div
+          style={{
+            flex: 1,
+            position: 'relative',
+            background:
+              'linear-gradient(155deg, #1a3a1f 0%, #2d5a27 25%, #3a6b1a 55%, #1f4a2e 80%, #0f2a14 100%)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Texture overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse 75% 55% at 58% 42%, rgba(60,100,40,0.28) 0%, rgba(5,20,10,0.52) 100%)',
+            }}
+          />
+
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 260 195"
+            preserveAspectRatio="xMidYMid slice"
+            style={{ position: 'absolute', inset: 0 }}
+          >
+            {/* APP buffer along river */}
+            <path
+              d="M 18 168 Q 62 148 103 155 Q 144 162 178 142 Q 210 124 240 95"
+              stroke="rgba(134,239,172,0.32)"
+              strokeWidth="11"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* River line */}
+            <path
+              d="M 18 168 Q 62 148 103 155 Q 144 162 178 142 Q 210 124 240 95"
+              stroke="#60a5fa"
+              strokeWidth="1.8"
+              fill="none"
+              strokeDasharray="6 3"
+              opacity="0.88"
+            />
+            <text x="128" y="143" fontSize="7.5" fill="#93c5fd" fontWeight="600" textAnchor="middle">
+              Rio / nascente
+            </text>
+
+            {/* Farm polygon */}
+            <polygon
+              points={POLY_POINTS}
+              fill="rgba(34,197,94,0.18)"
+              stroke="#4ade80"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+            />
+            {/* Dashed active edge (vertex 3 → 4 being traced) */}
+            <line
+              x1="220" y1="75" x2="195" y2="175"
+              stroke="#4ade80" strokeWidth="1.8" strokeDasharray="5 4" opacity="0.55"
+            />
+
+            {/* Vertex badges */}
+            {POLY_VERTS.map(([cx, cy, n]) => (
+              <g key={n}>
+                <circle cx={cx} cy={cy} r="9.5" fill="#012d1d" stroke="#4ade80" strokeWidth="1.5" />
+                <text x={cx} y={cy + 3.5} fontSize="7.5" fill="#86efac" fontWeight="700" textAnchor="middle">
+                  {n}
+                </text>
+              </g>
+            ))}
+
+            {/* Walker avatar at active vertex (3 = [220, 75]) */}
+            <text x="237" y="69" fontSize="15" textAnchor="middle" dominantBaseline="middle">🚶</text>
+          </svg>
+
+          {/* Legend */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'rgba(0,0,0,0.52)',
+              padding: '4px 10px',
+              display: 'flex',
+              gap: 14,
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="16" height="2">
+                <line x1="0" y1="1" x2="16" y2="1" stroke="#60a5fa" strokeWidth="2" strokeDasharray="5 3" />
+              </svg>
+              <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.62)', fontWeight: 600 }}>Rio/nascente</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  border: '1.5px solid rgba(134,239,172,0.5)',
+                  borderRadius: 2,
+                  background: 'rgba(134,239,172,0.14)',
+                }}
+              />
+              <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.62)', fontWeight: 600 }}>APP (preservação)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div
+          style={{
+            padding: '8px 10px',
+            background: '#0a1a10',
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              background: '#fff',
+              borderRadius: 20,
+              padding: '9px 8px',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#012d1d',
+              textAlign: 'center',
+            }}
+          >
+            ✓ Finalizar Perímetro
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              background: '#1b6b46',
+              borderRadius: 20,
+              fontSize: 22,
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            +
+          </div>
+        </div>
+
+        {/* Bottom nav */}
+        <div
+          style={{
+            height: 55,
+            background: '#0a1a10',
+            borderTop: '1px solid rgba(255,255,255,0.07)',
+            display: 'flex',
+          }}
+        >
+          {APP_NAV.map(({ icon, label, active }) => (
+            <div
+              key={label}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+              }}
+            >
+              <span style={{ fontSize: active ? 18 : 16, opacity: active ? 1 : 0.4 }}>{icon}</span>
+              <span
+                style={{
+                  fontSize: 7,
+                  fontWeight: active ? 700 : 400,
+                  color: active ? '#86efac' : 'rgba(255,255,255,0.38)',
+                }}
+              >
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// PropertyShowcaseSection — cartões de imóveis reais da API
+// =====================================================================
+
+function toEsriTile(lon: number, lat: number, z: number): string {
+  const x = Math.floor(((lon + 180) / 360) * 2 ** z);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * 2 ** z,
+  );
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+}
+
+const SITUACAO_MAP: Record<string, { label: string; cls: string }> = {
+  ativo: { label: 'Regularizado', cls: 'bg-[#d2ed91] text-[#394d00]' },
+  em_analise: { label: 'Em análise', cls: 'bg-blue-100 text-blue-700' },
+  pendente: { label: 'Pendente', cls: 'bg-[#ffdcbd] text-[#623f18]' },
+  cancelado: { label: 'Cancelado', cls: 'bg-[#ffdad6] text-[#93000a]' },
+};
+
+function situacaoLabel(s: unknown): { label: string; cls: string } {
+  if (typeof s !== 'string') return { label: '—', cls: 'bg-surface-variant text-on-surface-variant' };
+  return (
+    SITUACAO_MAP[s.toLowerCase()] ?? { label: s, cls: 'bg-surface-variant text-on-surface-variant' }
+  );
+}
+
+function fmtDate(val: unknown): string | null {
+  if (!val) return null;
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(String(val)));
+  } catch {
+    return typeof val === 'string' ? val : null;
+  }
+}
+
+function PropertyShowcaseSection({
+  features,
+  loading,
+}: {
+  features: GeoJSONFeature[];
+  loading: boolean;
+}) {
+  const cards = features.slice(0, 3);
+  if (!loading && cards.length === 0) return null;
+
+  return (
+    <section className="bg-surface-container-low py-16" data-reveal>
+      <div className="mx-auto max-w-7xl px-6 md:px-12">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-secondary">
+              Dados reais da API pública
+            </p>
+            <h2 className="font-headline-md text-2xl font-semibold text-primary">
+              Imóveis do CAR na palma da mão
+            </h2>
+          </div>
+          <a href="#mapa" className="text-sm font-semibold text-primary underline hover:no-underline">
+            Ver todos no mapa →
+          </a>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 animate-pulse rounded-2xl bg-surface-container" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {cards.map((f, i) => (
+              <PropertyCard
+                key={
+                  typeof f.properties.cod_car === 'string'
+                    ? f.properties.cod_car
+                    : `card-${i}`
+                }
+                feature={f}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PropertyCard({ feature }: { feature: GeoJSONFeature }) {
+  const p = feature.properties;
+  const bbox = featureBbox(feature);
+  const { label: stLabel, cls: stCls } = situacaoLabel(p.situacao);
+
+  let tileUrl: string | null = null;
+  if (bbox) {
+    const lon = (bbox[0] + bbox[2]) / 2;
+    const lat = (bbox[1] + bbox[3]) / 2;
+    tileUrl = toEsriTile(lon, lat, 15);
+  }
+
+  const nome = typeof p.nome === 'string' && p.nome ? p.nome : 'Imóvel Rural';
+  const municipio = typeof p.municipio === 'string' ? p.municipio : null;
+  const uf = typeof p.uf === 'string' ? p.uf : null;
+  const areaHa = typeof p.area_ha === 'number' ? p.area_ha : null;
+  const modulosFisc = p.modulos_fisc != null ? String(p.modulos_fisc) : null;
+  const atualizadoEm = fmtDate(p.atualizado_em);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      {/* Satellite tile header */}
+      <div className="relative h-32 overflow-hidden bg-surface-container">
+        {tileUrl && (
+          <img src={tileUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" loading="lazy" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+        {/* Area badge — bottom-left */}
+        {areaHa !== null && (
+          <div className="absolute bottom-2 left-3 flex items-baseline gap-1">
+            <span className="font-headline-md text-2xl font-bold tabular-nums leading-none text-white drop-shadow">
+              {Math.round(areaHa).toLocaleString('pt-BR')}
+            </span>
+            <span className="text-xs font-semibold text-white/75 drop-shadow">ha</span>
+          </div>
+        )}
+
+        {/* Status badge — top-right */}
+        <div className={`absolute right-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${stCls}`}>
+          {stLabel}
+        </div>
+      </div>
+
+      {/* Card body */}
+      <div className="p-4">
+        <h3 className="mb-0.5 truncate font-bold text-primary" title={nome}>
+          {nome}
+        </h3>
+        {(municipio || uf) && (
+          <p className="mb-3 text-sm text-on-surface-variant">
+            {[municipio, uf].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-xs text-on-surface-variant">
+          <span>
+            <span className="font-semibold text-on-surface">Situação:</span> {stLabel}
+          </span>
+          {modulosFisc && (
+            <span>
+              <span className="font-semibold text-on-surface">Mód. fiscais:</span> {modulosFisc}
+            </span>
+          )}
+          {atualizadoEm && (
+            <span>
+              <span className="font-semibold text-on-surface">Atualizado:</span> {atualizadoEm}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Map section — "Imóveis do CAR no mapa"
+// =====================================================================
+
+function MeasurementTechSection() {
+  return (
+    <section id="como-funciona" className="py-24 md:py-28" data-reveal>
+      <div className="mx-auto max-w-7xl px-6 md:px-12">
+        <div className="mb-14 flex flex-col items-center text-center">
+          <span className="mb-4 rounded-full bg-secondary/10 px-4 py-1.5 font-label-sm uppercase tracking-widest text-secondary">
+            Medição na palma da mão
+          </span>
+          <h2 className="font-headline-md text-3xl text-primary md:text-4xl">
+            O GPS e o acelerômetro do celular fazem a medição inicial
+          </h2>
+          <p className="mt-4 max-w-2xl text-body-md text-on-surface-variant">
+            O produtor caminha a divisa do imóvel com o celular no bolso. Sem técnico no local e sem
+            equipamento topográfico — só os sensores que todo smartphone já tem.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          <FeatureCard
+            icon="my_location"
+            title="GPS marca cada vértice"
+            text="Ao caminhar a divisa, o GPS de alta precisão registra a posição em cada ponto e fecha o perímetro automaticamente — calculando área (ha) e perímetro (m) na hora."
+          />
+          <FeatureCard
+            icon="vibration"
+            title="Acelerômetro confirma o passo"
+            text="O acelerômetro detecta o movimento do celular e sinaliza quando a captura está estável, reduzindo pontos falsos e deixando a medição mais confiável no campo."
+          />
+          <FeatureCard
+            icon="offline_bolt"
+            title="Funciona offline"
+            text="Capturar, calcular e guardar a medição funcionam sem sinal. A sincronização com a CAR Geo API acontece quando há conexão."
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function HeroMap({ features }: { features: GeoJSONFeature[] }) {
-  const divRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapGL | null>(null);
-  const featRef = useRef(features);
-  featRef.current = features;
-
-  useEffect(() => {
-    const el = divRef.current;
-    if (!el) return;
-    let alive = true;
-    const map = new MapGL({
-      container: el,
-      style: makeSatStyle(),
-      center: [-52, -12],
-      zoom: 4.4,
-      interactive: false,
-      attributionControl: false,
-    });
-    mapRef.current = map;
-
-    map.on('load', () => {
-      if (featRef.current.length) addParcels(map, featRef.current, 'hero', { fillOpacity: 0.2, lineColor: '#86efac' });
-      if (!prefersReducedMotion) {
-        const spin = () => {
-          if (!alive) return;
-          map.easeTo({ bearing: map.getBearing() + 26, duration: 16000, easing: (t) => t });
-        };
-        map.on('moveend', spin);
-        spin();
-      }
-    });
-
-    return () => {
-      alive = false;
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded() || !features.length) return;
-    addParcels(map, features, 'hero', { fillOpacity: 0.2, lineColor: '#86efac' });
-  }, [features]);
-
-  return <div ref={divRef} className="h-full w-full" />;
+function JourneySection() {
+  const steps = [
+    {
+      n: '1',
+      icon: 'hiking',
+      title: 'Você mede no campo',
+      text: 'Com o app, o produtor caminha a divisa e gera uma medição inicial — área, perímetro e um croqui/relatório preliminar. É o ponto de partida, gratuito.',
+    },
+    {
+      n: '2',
+      icon: 'engineering',
+      title: 'O técnico de campo afere',
+      text: 'Um analista de campo parceiro visita o imóvel, confere a medição na ponta e valida os limites. É a aferição com validade que o app sozinho não dá.',
+    },
+    {
+      n: '3',
+      icon: 'verified',
+      title: 'CAR definitivo',
+      text: 'Com a medição do produtor já adiantada e a aferição do técnico, a documentação oficial é emitida e o imóvel é regularizado no Cadastro Ambiental Rural.',
+    },
+  ];
+  return (
+    <section id="jornada" className="bg-surface-container-high py-24" data-reveal>
+      <div className="mx-auto max-w-7xl px-6 md:px-12">
+        <div className="mb-14 flex flex-col items-center text-center">
+          <span className="mb-4 rounded-full bg-secondary/10 px-4 py-1.5 font-label-sm uppercase tracking-widest text-secondary">
+            Da medição ao CAR
+          </span>
+          <h2 className="font-headline-md text-3xl text-primary md:text-4xl">
+            Da medição inicial ao CAR definitivo
+          </h2>
+          <p className="mt-4 max-w-2xl text-body-md text-on-surface-variant">
+            A medição do produtor e a aferição do técnico de campo se completam — uma adianta, a outra
+            dá validade. Juntas, tornam a regularização viável para o pequeno produtor.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {steps.map((s, i) => (
+            <div
+              key={s.n}
+              className="relative rounded-2xl border border-outline-variant bg-surface-container-lowest p-8"
+              style={{ transitionDelay: `${i * 80}ms` }}
+            >
+              <div className="mb-5 flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-on-primary">
+                  {s.n}
+                </div>
+                <Sym name={s.icon} className="text-2xl text-secondary" />
+              </div>
+              <h3 className="mb-2 text-xl font-bold text-primary">{s.title}</h3>
+              <p className="text-body-md leading-relaxed text-on-surface-variant">{s.text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-10 flex items-start gap-3 rounded-xl border border-primary/10 bg-primary/5 p-5">
+          <Sym name="info" className="shrink-0 text-primary" />
+          <p className="text-body-md text-on-surface-variant">
+            <strong className="text-primary">Por que essa dupla aferição importa:</strong> a medição
+            pessoal reduz custo e tempo e já sinaliza sobreposições (Terra Indígena, UC, embargo, APP)
+            antes da visita; a aferição do técnico de campo dá a validade legal que o registro oficial
+            exige. O app é o começo do processo — não o substitui.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }
-
-// =====================================================================
-// Map section — "Imóveis do CAR no mapa"
-// =====================================================================
 
 function MapSection({
   features,
