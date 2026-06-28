@@ -121,7 +121,7 @@ function addParcels(
     id: `${prefix}-outline`,
     type: 'line',
     source: srcId,
-    paint: { 'line-color': opts.lineColor, 'line-width': 1.8 },
+    paint: { 'line-color': opts.lineColor, 'line-width': 2.8 },
   });
   setTimeout(() => {
     if (map.getLayer(`${prefix}-fill`)) {
@@ -373,12 +373,6 @@ const POLY_VERTS: ReadonlyArray<readonly [number, number, number]> = [
 ];
 const POLY_POINTS = POLY_VERTS.map(([x, y]) => `${x},${y}`).join(' ');
 
-const APP_NAV = [
-  { icon: '📊', label: 'Dashboard', active: false },
-  { icon: '📍', label: 'Medições', active: true },
-  { icon: '📄', label: 'Documentos', active: false },
-  { icon: '👤', label: 'Perfil', active: false },
-] as const;
 
 function AppMockup() {
   return (
@@ -544,37 +538,43 @@ function AppMockup() {
           </div>
         </div>
 
-        {/* GPS chips */}
+        {/* GPS chips (2 linhas: rótulo + valor, igual ao app) */}
         <div style={{ display: 'flex', gap: 6, padding: '0 10px 7px' }}>
           <div
             style={{
               flex: 1,
               background: 'rgba(34,197,94,0.12)',
               border: '1px solid rgba(34,197,94,0.25)',
-              borderRadius: 20,
-              padding: '5px 8px',
+              borderRadius: 12,
+              padding: '5px 9px',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 6,
             }}
           >
-            <span style={{ fontSize: 11 }}>🎯</span>
-            <span style={{ fontSize: 8.5, color: '#86efac', fontWeight: 600 }}>Precisão GPS · 1,2 m</span>
+            <span style={{ fontSize: 12 }}>🎯</span>
+            <div style={{ lineHeight: 1.15 }}>
+              <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.5)' }}>Precisão GPS</div>
+              <div style={{ fontSize: 9.5, color: '#86efac', fontWeight: 700 }}>1,2 m</div>
+            </div>
           </div>
           <div
             style={{
               flex: 1,
               background: 'rgba(251,191,36,0.1)',
               border: '1px solid rgba(251,191,36,0.2)',
-              borderRadius: 20,
-              padding: '5px 8px',
+              borderRadius: 12,
+              padding: '5px 9px',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 6,
             }}
           >
-            <span style={{ fontSize: 11 }}>📳</span>
-            <span style={{ fontSize: 8.5, color: '#fcd34d', fontWeight: 600 }}>Aceler. · Estável</span>
+            <span style={{ fontSize: 12 }}>📳</span>
+            <div style={{ lineHeight: 1.15 }}>
+              <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.5)' }}>Acelerômetro</div>
+              <div style={{ fontSize: 9.5, color: '#fcd34d', fontWeight: 700 }}>Estável</div>
+            </div>
           </div>
         </div>
 
@@ -689,81 +689,46 @@ function AppMockup() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div
-          style={{
-            padding: '8px 10px',
-            background: '#0a1a10',
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-          }}
-        >
+        {/* Rodapé da medição — igual à tela: pronto + finalizar + recomeçar */}
+        <div style={{ background: '#0a1a10', padding: '8px 10px 11px' }}>
           <div
             style={{
-              flex: 1,
-              background: '#fff',
-              borderRadius: 20,
-              padding: '9px 8px',
-              fontSize: 10,
+              textAlign: 'center',
+              fontSize: 9.5,
               fontWeight: 700,
-              color: '#012d1d',
+              color: '#86efac',
+              marginBottom: 7,
+            }}
+          >
+            Pronto! 39,8 ha medidos
+          </div>
+          <div
+            style={{
+              background: '#1b6b46',
+              borderRadius: 12,
+              padding: '9px',
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#fff',
+              textAlign: 'center',
+              marginBottom: 6,
+            }}
+          >
+            Finalizar Perímetro
+          </div>
+          <div
+            style={{
+              border: '1px solid rgba(134,239,172,0.4)',
+              borderRadius: 12,
+              padding: '7px',
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#86efac',
               textAlign: 'center',
             }}
           >
-            ✓ Finalizar Perímetro
+            Recomeçar
           </div>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              background: '#1b6b46',
-              borderRadius: 20,
-              fontSize: 22,
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            +
-          </div>
-        </div>
-
-        {/* Bottom nav */}
-        <div
-          style={{
-            height: 55,
-            background: '#0a1a10',
-            borderTop: '1px solid rgba(255,255,255,0.07)',
-            display: 'flex',
-          }}
-        >
-          {APP_NAV.map(({ icon, label, active }) => (
-            <div
-              key={label}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-              }}
-            >
-              <span style={{ fontSize: active ? 18 : 16, opacity: active ? 1 : 0.4 }}>{icon}</span>
-              <span
-                style={{
-                  fontSize: 7,
-                  fontWeight: active ? 700 : 400,
-                  color: active ? '#86efac' : 'rgba(255,255,255,0.38)',
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -1155,7 +1120,7 @@ function LiveMap({
           if (!m) return;
           setReady(true);
           if (featRef.current.length) {
-            addParcels(m, featRef.current, 'main', { fillOpacity: 0.4, lineColor: '#bbf7d0' });
+            addParcels(m, featRef.current, 'main', { fillOpacity: 0.5, lineColor: '#22c55e' });
             const bbox = collectionBbox(featRef.current);
             if (bbox) m.fitBounds(bbox, { padding: 50, duration: 1400, maxZoom: 13 });
           }
@@ -1186,7 +1151,7 @@ function LiveMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded() || !features.length) return;
-    addParcels(map, features, 'main', { fillOpacity: 0.4, lineColor: '#bbf7d0' });
+    addParcels(map, features, 'main', { fillOpacity: 0.5, lineColor: '#22c55e' });
     const bbox = collectionBbox(features);
     if (bbox) map.fitBounds(bbox, { padding: 50, duration: 1400, maxZoom: 13 });
   }, [features]);
