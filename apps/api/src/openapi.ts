@@ -9,7 +9,7 @@ export const openapiDocument = {
     version: '0.1.0',
     description:
       'API geoespacial aberta e padronizada (OGC API Features) para o Cadastro Ambiental Rural (CAR). ' +
-      'Gere uma chave gratuita no portal e use no header `X-API-Key`. haCARthon · Desafio 2 · Solução 7.',
+      'Leitura de feições é pública (sem autenticação). Gere uma chave gratuita no portal para acesso a funcionalidades futuras. haCARthon · Desafio 2 · Solução 7.',
     license: { name: 'MIT' },
   },
   // URL relativa: o Swagger resolve as chamadas contra o mesmo host que serve o /docs,
@@ -17,7 +17,7 @@ export const openapiDocument = {
   servers: [{ url: '/' }],
   tags: [
     { name: 'Meta', description: 'Landing, conformidade e coleções (público)' },
-    { name: 'Dados', description: 'Feições geoespaciais em GeoJSON (requer chave)' },
+    { name: 'Dados', description: 'Feições geoespaciais em GeoJSON (público)' },
     { name: 'Chaves', description: 'Geração de chave de API (público)' },
   ],
   components: {
@@ -87,8 +87,7 @@ export const openapiDocument = {
     '/collections/{collectionId}/items': {
       get: {
         tags: ['Dados'],
-        summary: 'Feições em GeoJSON (requer chave de API)',
-        security: [{ ApiKeyAuth: [] }],
+        summary: 'Feições em GeoJSON (público)',
         parameters: [
           {
             name: 'collectionId',
@@ -105,20 +104,18 @@ export const openapiDocument = {
             description: 'FeatureCollection',
             content: { 'application/geo+json': { schema: { $ref: '#/components/schemas/FeatureCollection' } } },
           },
-          '401': { description: 'Chave ausente/inválida', content: { 'application/json': { schema: { $ref: '#/components/schemas/Erro' } } } },
         },
       },
     },
     '/collections/{collectionId}/items/{featureId}': {
       get: {
         tags: ['Dados'],
-        summary: 'Uma feição por id (requer chave de API)',
-        security: [{ ApiKeyAuth: [] }],
+        summary: 'Uma feição por id (público)',
         parameters: [
           { name: 'collectionId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'featureId', in: 'path', required: true, schema: { type: 'string' } },
         ],
-        responses: { '200': { description: 'Feature' }, '401': { description: 'Não autorizado' }, '404': { description: 'Não encontrada' } },
+        responses: { '200': { description: 'Feature' }, '404': { description: 'Não encontrada' } },
       },
     },
     '/keys': {
