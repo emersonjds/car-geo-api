@@ -4,8 +4,13 @@ import { COLLECTIONS, getCollection } from '../lib/collections.js';
 import { getItem, getItems } from '../lib/features.js';
 import { link, parseBbox, parsePaging } from '../lib/ogc.js';
 import { createApiKey } from '../lib/apikeys.js';
-import { requireApiKey } from '../lib/auth.js';
-import { getDocument, saveDocument } from '../lib/documents.js';
+import {
+  getDocument,
+  saveDocument,
+  gerarCodigo,
+  hashCpf,
+  getDocumentByCodigo,
+} from '../lib/documents.js';
 import { config } from '../config.js';
 import { openapiDocument } from '../openapi.js';
 
@@ -50,7 +55,7 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   // Upload de documento PDF (público) — recebe base64, devolve link público.
-  app.post<{ Body: { pdf_base64?: string; nome?: string } }>(
+  app.post<{ Body: { pdf_base64?: string; nome?: string; cpf?: string } }>(
     '/documentos',
     { bodyLimit: 12 * 1024 * 1024 }, // generoso p/ caber o base64 de um PDF de 8 MB
     async (req, reply) => {
@@ -66,10 +71,30 @@ export async function registerRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: 'bad-request', description: 'PDF maior que 8 MB' });
       }
       const nome = typeof body.nome === 'string' ? body.nome.slice(0, 200) : undefined;
-      const saved = await saveDocument({ nome, bytes });
+      const cpfHash = typeof body.cpf === 'string' ? hashCpf(body.cpf.replace(/\D/g, '')) : null;
+
+      // Tenta gerar um código único; colisão no índice único → tenta de novo.
+      let saved;
+      let codigo = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        codigo = gerarCodigo();
+        try {
+          saved = await saveDocument({ nome, bytes, codigo, cpfHash });
+          break;
+        } catch (err) {
+          if ((err as { code?: string }).code === '23505' && attempt < 4) continue;
+          throw err;
+        }
+      }
+      if (!saved) {
+        return reply.code(500).send({ code: 'internal', description: 'não foi possível gerar código' });
+      }
+      const origin = publicOrigin(req);
       return reply.code(201).send({
         id: saved.id,
-        url: `${publicOrigin(req)}/documentos/${saved.id}`,
+        codigo,
+        url: `${origin}/documentos/${saved.id}`,
+        view_url: `${origin}/documentos/${saved.id}/ver`,
         nome: nome ?? null,
         createdAt: saved.createdAt,
       });
@@ -115,6 +140,78 @@ export async function registerRoutes(app: FastifyInstance) {
   <a class="btn" href="${pdf}" download>Baixar PDF</a>
 </main></body></html>`;
     return reply.type('text/html').send(html);
+  });
+
+  // Página de consulta pública (pitch/desktop) — CPF + código → /documentos/:id/ver.
+  app.get('/consulta', async (_req, reply) => {
+    const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Consultar medição · CAR Campo</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1b12;color:#e9f0ea}
+  header{display:flex;align-items:center;gap:10px;padding:14px 20px;background:#16321f}
+  header b{font-size:16px} header span{color:#9bbfa6;font-size:13px}
+  main{max-width:460px;margin:0 auto;padding:24px 16px}
+  h1{font-size:22px;margin:8px 0 18px}
+  label{display:block;margin:14px 0 6px;font-size:14px;color:#9bbfa6}
+  input{width:100%;padding:12px 14px;border:1px solid #2d5a27;border-radius:8px;background:#10241a;color:#e9f0ea;font-size:16px}
+  button{width:100%;margin-top:20px;padding:13px 18px;background:#2d5a27;color:#fff;border:0;border-radius:8px;font-weight:600;font-size:16px;cursor:pointer}
+  #erro{margin-top:14px;color:#f3b0a8;font-size:14px;min-height:18px}
+</style></head><body>
+<header><span>🌿</span><b>CAR Campo</b><span>· Consulta</span></header>
+<main>
+  <h1>Consultar medição</h1>
+  <form id="f">
+    <label for="cpf">CPF</label>
+    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00">
+    <label for="codigo">Código</label>
+    <input id="codigo" name="codigo" autocapitalize="characters" autocomplete="off" placeholder="Ex.: K7M2QX" style="text-transform:uppercase">
+    <button type="submit">Ver medição</button>
+    <div id="erro"></div>
+  </form>
+</main>
+<script>
+  document.getElementById('f').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var erro = document.getElementById('erro');
+    erro.textContent = '';
+    var cpf = document.getElementById('cpf').value;
+    var codigo = document.getElementById('codigo').value.toUpperCase().trim();
+    try {
+      var r = await fetch('/consulta/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cpf: cpf, codigo: codigo }),
+      });
+      var data = await r.json();
+      if (data.ok) { location.href = data.view_url; }
+      else { erro.textContent = 'Medição não encontrada — confira CPF e código.'; }
+    } catch (_) {
+      erro.textContent = 'Medição não encontrada — confira CPF e código.';
+    }
+  });
+</script>
+</body></html>`;
+    return reply.type('text/html').send(html);
+  });
+
+  // Lookup da consulta — acha por código e confere o CPF (hash). Não vaza se erro
+  // é "código inexistente" ou "CPF errado": ambos respondem 404 { ok:false }.
+  app.post<{ Body: { cpf?: string; codigo?: string } }>('/consulta/lookup', async (req, reply) => {
+    const body = req.body ?? {};
+    if (typeof body.codigo !== 'string' || body.codigo.trim().length === 0) {
+      return reply.code(400).send({ ok: false, description: 'código é obrigatório' });
+    }
+    const doc = await getDocumentByCodigo(body.codigo.trim().toUpperCase());
+    if (!doc) return reply.code(404).send({ ok: false });
+    if (doc.cpf_hash && hashCpf((body.cpf ?? '').replace(/\D/g, '')) !== doc.cpf_hash) {
+      return reply.code(404).send({ ok: false });
+    }
+    return reply.send({
+      ok: true,
+      id: doc.id,
+      view_url: `${publicOrigin(req)}/documentos/${doc.id}/ver`,
+    });
   });
 
   // Landing page (OGC API Features — requirement class "Core")
@@ -177,7 +274,7 @@ export async function registerRoutes(app: FastifyInstance) {
   app.get<{
     Params: { collectionId: string };
     Querystring: { bbox?: string; limit?: string; offset?: string };
-  }>('/collections/:collectionId/items', { preHandler: requireApiKey }, async (req, reply) => {
+  }>('/collections/:collectionId/items', async (req, reply) => {
     const c = getCollection(req.params.collectionId);
     if (!c) return reply.code(404).send({ code: 'not-found', description: 'Coleção não encontrada' });
 
@@ -208,7 +305,6 @@ export async function registerRoutes(app: FastifyInstance) {
   // Uma feição por id
   app.get<{ Params: { collectionId: string; featureId: string } }>(
     '/collections/:collectionId/items/:featureId',
-    { preHandler: requireApiKey },
     async (req, reply) => {
       const c = getCollection(req.params.collectionId);
       if (!c) return reply.code(404).send({ code: 'not-found', description: 'Coleção não encontrada' });
