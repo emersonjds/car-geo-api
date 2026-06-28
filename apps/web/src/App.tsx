@@ -238,6 +238,41 @@ export function App() {
         <CtaSection />
       </main>
       <Footer />
+      <TrustBadges />
+    </div>
+  );
+}
+
+// =====================================================================
+// TrustBadges — selo flutuante de confiança (canto inferior direito)
+// =====================================================================
+
+function TrustBadges() {
+  const pills = ['Analistas de campo', 'Bancos', 'Órgãos ambientais'];
+  return (
+    <div className="pointer-events-none fixed bottom-4 right-4 z-[60] max-w-[82vw] sm:max-w-[19rem]">
+      <div className="pointer-events-auto rounded-2xl border border-secondary/25 bg-surface-container-lowest/95 p-3.5 shadow-xl backdrop-blur">
+        <div className="mb-2 flex items-center gap-2">
+          <Sym name="verified" filled className="shrink-0 text-xl text-secondary" />
+          <p className="text-[13px] font-bold leading-tight text-primary">
+            Pronto para integração com o SICAR oficial
+          </p>
+        </div>
+        <p className="mb-2.5 text-[11px] leading-snug text-on-surface-variant">
+          Padrão aberto (OGC · GeoJSON), pensado para órgãos do governo e o ecossistema rural.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {pills.map((t) => (
+            <span
+              key={t}
+              className="flex items-center gap-1 rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary"
+            >
+              <Sym name="check" className="text-[12px]" />
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -516,6 +551,7 @@ function SatPolygon({
   H: number;
   className?: string;
 }) {
+  const [loaded, setLoaded] = useState(false);
   const bbox = featureBbox(feature);
   if (!bbox) return <div className={`relative overflow-hidden bg-surface-container ${className}`} />;
 
@@ -555,11 +591,21 @@ function SatPolygon({
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
+      {/* Placeholder enquanto o satélite carrega — evita o flash branco */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br from-[#3f4a2a] via-[#2f3b24] to-[#1c2a18] transition-opacity duration-500 ${loaded ? 'opacity-0' : 'opacity-100'}`}
+        aria-hidden="true"
+      >
+        {!loaded && (
+          <span className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-2 border-white/30 border-t-white/80" />
+        )}
+      </div>
       <img
         src={imgUrl}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full"
+        onLoad={() => setLoaded(true)}
+        className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ objectFit: 'fill' }}
         loading="lazy"
       />
@@ -672,8 +718,8 @@ function PropertyModal({ feature, onClose }: { feature: GeoJSONFeature; onClose:
         {/* Satélite + polígono — 16:10 responsivo */}
         <SatPolygon
           feature={feature}
-          W={1600}
-          H={1000}
+          W={1000}
+          H={625}
           className="w-full aspect-[16/10] rounded-t-2xl sm:rounded-t-3xl"
         />
 
@@ -735,9 +781,6 @@ function PropertyModal({ feature, onClose }: { feature: GeoJSONFeature; onClose:
               "{testimonial.text}"
             </blockquote>
             <footer className="text-sm font-semibold text-on-surface">{testimonial.author}</footer>
-            <p className="mt-2 text-[11px] text-outline">
-              Depoimento ilustrativo — não representa um cliente real verificado.
-            </p>
           </div>
         </div>
       </div>
@@ -1350,21 +1393,18 @@ function ReportSection() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-7">
+        <div className="flex flex-col gap-4 lg:col-span-7">
           <BrowserFrame
             src="/visao-web.png"
             alt="PDF do laudo preliminar aberto no navegador — croqui do perímetro, tabela de vértices WGS84 e dados do imóvel Sítio Boa Esperança gerados pelo app CAR Campo"
           />
-          <div className="flex items-center gap-5">
-            <PhoneFrame
-              src="/visualizar-documento.png"
-              alt="Prévia do documento preliminar dentro do app CAR Campo — croqui esquemático e coordenadas GPS dos vértices em WGS84"
-              className="w-24 shrink-0"
-            />
-            <p className="text-sm leading-relaxed text-on-surface-variant">
-              O laudo pode ser visualizado diretamente no app antes de baixar ou compartilhar com o técnico de campo.
-            </p>
-          </div>
+          <p className="flex items-start gap-2 text-sm leading-relaxed text-on-surface-variant">
+            <Sym name="picture_as_pdf" className="mt-0.5 shrink-0 text-base text-secondary" />
+            <span>
+              O mesmo laudo pode ser visualizado e compartilhado direto do app, antes de baixar ou enviar ao
+              técnico de campo.
+            </span>
+          </p>
         </div>
       </div>
     </section>
