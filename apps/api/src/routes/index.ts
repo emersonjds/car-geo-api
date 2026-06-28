@@ -163,7 +163,7 @@ export async function registerRoutes(app: FastifyInstance) {
   <h1>Consultar medição</h1>
   <form id="f">
     <label for="cpf">CPF</label>
-    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00">
+    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00">
     <label for="codigo">Código</label>
     <input id="codigo" name="codigo" autocapitalize="characters" autocomplete="off" placeholder="Ex.: K7M2QX" style="text-transform:uppercase">
     <button type="submit">Ver medição</button>
@@ -171,6 +171,16 @@ export async function registerRoutes(app: FastifyInstance) {
   </form>
 </main>
 <script>
+  // Máscara de CPF: formata 000.000.000-00 enquanto digita (server ignora a pontuação).
+  var cpfEl = document.getElementById('cpf');
+  cpfEl.addEventListener('input', function () {
+    var d = cpfEl.value.replace(/\D/g, '').slice(0, 11);
+    var out = d;
+    if (d.length > 9) out = d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9);
+    else if (d.length > 6) out = d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
+    else if (d.length > 3) out = d.slice(0,3)+'.'+d.slice(3);
+    cpfEl.value = out;
+  });
   document.getElementById('f').addEventListener('submit', async function (e) {
     e.preventDefault();
     var erro = document.getElementById('erro');
