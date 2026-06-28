@@ -10,6 +10,7 @@ import { ensureDocumentSchema } from './lib/documents.js';
 
 export async function buildApp() {
   const app = Fastify({
+    trustProxy: true, // atrás do proxy do Render/CDN: confia em x-forwarded-*
     logger: {
       transport:
         process.env.NODE_ENV === 'production'

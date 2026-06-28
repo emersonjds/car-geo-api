@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { pool } from '../db/pool.js';
 import { COLLECTIONS, getCollection } from '../lib/collections.js';
 import { getItem, getItems } from '../lib/features.js';
@@ -11,6 +11,18 @@ import { openapiDocument } from '../openapi.js';
 
 const MAX_PDF_BYTES = 8 * 1024 * 1024; // 8 MB decodificado
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Origem pública para montar o link do documento. Funciona atrás de proxy/CDN
+// (Render, Cloudflare, túnel) e em LAN: prioriza PUBLIC_BASE_URL (deploy), senão
+// deriva dos headers x-forwarded-* / host do próprio request. Nunca usa localhost
+// quando há host real — é isso que faz o link abrir em qualquer navegador.
+function publicOrigin(req: FastifyRequest): string {
+  const env = process.env.PUBLIC_BASE_URL;
+  if (env) return env.replace(/\/$/, '');
+  const proto = String(req.headers['x-forwarded-proto'] ?? '').split(',')[0]?.trim() || req.protocol;
+  const host = req.headers['x-forwarded-host'] ?? req.headers.host;
+  return host ? `${proto}://${host}` : config.baseUrl;
+}
 
 export async function registerRoutes(app: FastifyInstance) {
   // Health check (infra/k8s)
@@ -57,7 +69,7 @@ export async function registerRoutes(app: FastifyInstance) {
       const saved = await saveDocument({ nome, bytes });
       return reply.code(201).send({
         id: saved.id,
-        url: `${config.baseUrl}/documentos/${saved.id}`,
+        url: `${publicOrigin(req)}/documentos/${saved.id}`,
         nome: nome ?? null,
         createdAt: saved.createdAt,
       });
