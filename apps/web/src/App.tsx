@@ -131,6 +131,39 @@ function addParcels(
 }
 
 // =====================================================================
+// PhoneFrame — adds a dark iOS-style bezel around a raw screenshot
+// =====================================================================
+
+function PhoneFrame({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  return (
+    <div
+      className={`inline-block rounded-[2.5rem] border-[10px] border-[#1c1c1e] bg-[#1c1c1e] shadow-[0_32px_64px_rgba(0,0,0,0.42)] ${className}`}
+    >
+      <div className="overflow-hidden rounded-[1.75rem]">
+        <img src={src} alt={alt} loading="lazy" className="block w-full" />
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// BrowserFrame — lightweight desktop browser chrome for web screenshots
+// =====================================================================
+
+function BrowserFrame({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  return (
+    <div className={`overflow-hidden rounded-2xl border border-outline-variant shadow-2xl ${className}`}>
+      <div className="flex items-center gap-1.5 border-b border-outline-variant bg-surface-container px-4 py-2.5">
+        <span className="h-3 w-3 rounded-full bg-[#ff5f56]" aria-hidden="true" />
+        <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" aria-hidden="true" />
+        <span className="h-3 w-3 rounded-full bg-[#27c93f]" aria-hidden="true" />
+      </div>
+      <img src={src} alt={alt} loading="lazy" className="block w-full" />
+    </div>
+  );
+}
+
+// =====================================================================
 // Material Symbol
 // =====================================================================
 
@@ -361,25 +394,22 @@ function HeroSection({ features, stats }: { features: GeoJSONFeature[]; stats: S
 
 // =====================================================================
 // AppMockup — screenshot real do app CAR Campo (tela de medição)
-// Imagem em apps/web/public/app-medicao.png (print do device já com moldura).
 // =====================================================================
 
 function AppMockup() {
   return (
     <div className="relative hidden flex-col items-center lg:flex">
-      {/* Glows */}
       <div className="pointer-events-none absolute -right-12 -top-12 -z-10 h-64 w-64 rounded-full bg-secondary-container/40 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-12 -left-12 -z-10 h-64 w-64 rounded-full bg-primary-fixed/50 blur-3xl" />
 
-      <p className="mb-4 text-center text-sm font-semibold text-on-surface-variant">
+      <p className="mb-6 text-center text-sm font-semibold text-on-surface-variant">
         Seus terrenos e documentações na palma da mão.
       </p>
 
-      <img
+      <PhoneFrame
         src="/app-medicao.png"
-        alt="App CAR Campo — tela de medição do perímetro do imóvel com GPS e acelerômetro"
-        loading="lazy"
-        className="h-[576px] w-auto select-none drop-shadow-[0_32px_64px_rgba(0,0,0,0.38)]"
+        alt="App CAR Campo — tela de medição do perímetro do imóvel com GPS e acelerômetro, mostrando 39,8 ha e vértices numerados no mapa satélite"
+        className="w-64"
       />
     </div>
   );
@@ -573,22 +603,31 @@ function MeasurementTechSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <FeatureCard
-            icon="my_location"
-            title="GPS marca cada vértice"
-            text="Ao caminhar a divisa, o GPS de alta precisão registra a posição em cada ponto e fecha o perímetro automaticamente — calculando área (ha) e perímetro (m) na hora."
-          />
-          <FeatureCard
-            icon="vibration"
-            title="Acelerômetro confirma o passo"
-            text="O acelerômetro detecta o movimento do celular e sinaliza quando a captura está estável, reduzindo pontos falsos e deixando a medição mais confiável no campo."
-          />
-          <FeatureCard
-            icon="offline_bolt"
-            title="Funciona offline"
-            text="Capturar, calcular e guardar a medição funcionam sem sinal. A sincronização com a CAR Geo API acontece quando há conexão."
-          />
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+          <div className="flex justify-center">
+            <PhoneFrame
+              src="/revisao-1.png"
+              alt="App CAR Campo — tela de revisão mostrando Dados do Imóvel (Sítio Boa Esperança, Sorriso/MT) e Medidas (39,81 ha · 2.405 m · 6 vértices GPS)"
+              className="w-52"
+            />
+          </div>
+          <div className="flex flex-col gap-6">
+            <FeatureCard
+              icon="my_location"
+              title="GPS marca cada vértice"
+              text="Ao caminhar a divisa, o GPS de alta precisão registra a posição em cada ponto e fecha o perímetro automaticamente — calculando área (ha) e perímetro (m) na hora."
+            />
+            <FeatureCard
+              icon="vibration"
+              title="Acelerômetro confirma o passo"
+              text="O acelerômetro detecta o movimento do celular e sinaliza quando a captura está estável, reduzindo pontos falsos e deixando a medição mais confiável no campo."
+            />
+            <FeatureCard
+              icon="offline_bolt"
+              title="Funciona offline"
+              text="Capturar, calcular e guardar a medição funcionam sem sinal. A sincronização com a CAR Geo API acontece quando há conexão."
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -602,18 +641,27 @@ function JourneySection() {
       icon: 'hiking',
       title: 'Você mede no campo',
       text: 'Com o app, o produtor caminha a divisa e gera uma medição inicial — área, perímetro e um croqui/relatório preliminar. É o ponto de partida, gratuito.',
+      img: '/medicao-preliminar.png',
+      imgAlt:
+        'App CAR Campo — Sítio Boa Esperança: mapa satélite com perímetro desenhado (39,82 ha), aviso "Medição preliminar (não oficial)" e opção de gerar documento final',
     },
     {
       n: '2',
       icon: 'engineering',
       title: 'O técnico de campo afere',
       text: 'Um analista de campo parceiro visita o imóvel, confere a medição na ponta e valida os limites. É a aferição com validade que o app sozinho não dá.',
+      img: '/gerar-link-para-conferencia.png',
+      imgAlt:
+        'App CAR Campo — modal "Medição na web — Código: S3TUMZ" com link para o produtor compartilhar a medição com o técnico de campo via consulta web',
     },
     {
       n: '3',
       icon: 'verified',
       title: 'CAR definitivo',
       text: 'Com a medição do produtor já adiantada e a aferição do técnico, a documentação oficial é emitida e o imóvel é regularizado no Cadastro Ambiental Rural.',
+      img: '/docs-gerados-em-campo.png',
+      imgAlt:
+        'App CAR Campo — lista de documentos gerados em campo: Medição preliminar (PDF) e GeoJSON do perímetro, com checklist "Para a emissão oficial do CAR"',
     },
   ];
   return (
@@ -635,9 +683,12 @@ function JourneySection() {
           {steps.map((s, i) => (
             <div
               key={s.n}
-              className="relative rounded-2xl border border-outline-variant bg-surface-container-lowest p-8"
+              className="relative flex flex-col rounded-2xl border border-outline-variant bg-surface-container-lowest p-8"
               style={{ transitionDelay: `${i * 80}ms` }}
             >
+              <div className="mb-6 flex justify-center">
+                <PhoneFrame src={s.img} alt={s.imgAlt} className="w-36" />
+              </div>
               <div className="mb-5 flex items-center gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-on-primary">
                   {s.n}
@@ -1050,77 +1101,24 @@ function ReportSection() {
           </p>
         </div>
 
-        <div className="flex justify-center lg:col-span-7 lg:justify-end">
-          <ReportPreview />
+        <div className="flex flex-col gap-6 lg:col-span-7">
+          <BrowserFrame
+            src="/visao-web.png"
+            alt="PDF do laudo preliminar aberto no navegador — croqui do perímetro, tabela de vértices WGS84 e dados do imóvel Sítio Boa Esperança gerados pelo app CAR Campo"
+          />
+          <div className="flex items-center gap-5">
+            <PhoneFrame
+              src="/visualizar-documento.png"
+              alt="Prévia do documento preliminar dentro do app CAR Campo — croqui esquemático e coordenadas GPS dos vértices em WGS84"
+              className="w-24 shrink-0"
+            />
+            <p className="text-sm leading-relaxed text-on-surface-variant">
+              O laudo pode ser visualizado diretamente no app antes de baixar ou compartilhar com o técnico de campo.
+            </p>
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function ReportPreview() {
-  const ALERTS = [
-    { label: 'Terra Indígena (FUNAI)', tone: 'crit' },
-    { label: 'Embargo IBAMA', tone: 'crit' },
-    { label: 'APP — faixa de rio', tone: 'info' },
-  ] as const;
-
-  return (
-    <div className="relative w-full max-w-lg">
-      <div className="absolute inset-0 -z-10 translate-x-4 translate-y-4 rotate-3 rounded-2xl bg-primary/5" />
-      <div className="absolute inset-0 -z-20 translate-x-8 translate-y-8 rotate-6 rounded-2xl bg-primary/10" />
-
-      <div className="paper-shadow relative rounded-xl bg-white p-6 transition-all duration-500 hover:-translate-y-2">
-        {/* Badge */}
-        <div className="absolute -right-5 -top-5 flex items-center gap-3 rounded-2xl border-4 border-white bg-secondary px-5 py-3 font-bold text-on-secondary shadow-xl">
-          <Sym name="description" filled className="text-2xl" />
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-tighter opacity-80">Relatório</span>
-            <span className="text-base leading-tight">PRELIMINAR</span>
-          </div>
-        </div>
-
-        <div className="mb-5 flex items-center gap-2 border-b border-outline-variant pb-4">
-          <Sym name="eco" filled className="text-primary" />
-          <span className="font-headline-md text-lg font-bold text-primary">CAR Campo</span>
-          <span className="ml-auto text-xs text-outline">Medição #SRR-2049</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-xl bg-surface-container-low p-4">
-            <span className="text-xs uppercase tracking-wide text-outline">Área</span>
-            <p className="font-headline-md text-2xl font-bold tabular-nums text-primary">52,7 ha</p>
-          </div>
-          <div className="rounded-xl bg-surface-container-low p-4">
-            <span className="text-xs uppercase tracking-wide text-outline">Perímetro</span>
-            <p className="font-headline-md text-2xl font-bold tabular-nums text-primary">3.140 m</p>
-          </div>
-        </div>
-
-        <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-wide text-on-surface-variant">
-          Sobreposições detectadas
-        </p>
-        <ul className="flex flex-col gap-2">
-          {ALERTS.map((a) => (
-            <li
-              key={a.label}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
-                a.tone === 'crit'
-                  ? 'bg-error-container text-on-error-container'
-                  : 'bg-secondary-container text-on-secondary-container'
-              }`}
-            >
-              <Sym name={a.tone === 'crit' ? 'block' : 'info'} className="text-base" />
-              {a.label}
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-5 border-t border-outline-variant pt-4 text-xs italic text-outline">
-          Documento preliminar e informativo · valores de exemplo · não substitui o laudo oficial.
-        </p>
-      </div>
-    </div>
   );
 }
 
