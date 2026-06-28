@@ -16,6 +16,19 @@ export interface GeneratedKey {
   aviso?: string;
 }
 
+export interface GeoJSONFeature {
+  type: 'Feature';
+  geometry: { type: string; coordinates: unknown };
+  properties: Record<string, unknown>;
+}
+
+export interface GeoJSONCollection {
+  type: 'FeatureCollection';
+  features: GeoJSONFeature[];
+  numberMatched?: number;
+  numberReturned?: number;
+}
+
 export async function listCollections(): Promise<Collection[]> {
   const res = await fetch(`${API_BASE_URL}/collections`);
   if (!res.ok) throw new Error(`Falha ao listar coleções (HTTP ${res.status})`);
@@ -64,4 +77,14 @@ export async function testItems(collectionId: string, apiKey: string, bbox?: str
     numberReturned: body.numberReturned as number,
     sample: features[0],
   };
+}
+
+// Leitura pública — sem X-API-Key (endpoints abertos)
+export async function fetchItems(collectionId: string, bbox?: string): Promise<GeoJSONCollection> {
+  const url = new URL(`${API_BASE_URL}/collections/${collectionId}/items`);
+  url.searchParams.set('limit', '50');
+  if (bbox) url.searchParams.set('bbox', bbox);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<GeoJSONCollection>;
 }
