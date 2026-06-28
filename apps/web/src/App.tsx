@@ -1,4 +1,5 @@
 import { Map as MapGL, type StyleSpecification, type GeoJSONSource } from 'maplibre-gl';
+import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   API_BASE_URL,
@@ -419,15 +420,6 @@ function AppMockup() {
 // PropertyShowcaseSection — cartões de imóveis reais da API
 // =====================================================================
 
-function toEsriTile(lon: number, lat: number, z: number): string {
-  const x = Math.floor(((lon + 180) / 360) * 2 ** z);
-  const latRad = (lat * Math.PI) / 180;
-  const y = Math.floor(
-    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * 2 ** z,
-  );
-  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
-}
-
 const SITUACAO_MAP: Record<string, { label: string; cls: string }> = {
   ativo: { label: 'Regularizado', cls: 'bg-[#d2ed91] text-[#394d00]' },
   em_analise: { label: 'Em análise', cls: 'bg-blue-100 text-blue-700' },
@@ -476,6 +468,9 @@ function PropertyShowcaseSection({
             <h2 className="font-headline-md text-2xl font-semibold text-primary">
               Imóveis do CAR na palma da mão
             </h2>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Toque em um imóvel para ver o polígono, os dados e o depoimento do produtor.
+            </p>
           </div>
           <a href="#mapa" className="text-sm font-semibold text-primary underline hover:no-underline">
             Ver todos no mapa →
@@ -507,17 +502,255 @@ function PropertyShowcaseSection({
   );
 }
 
-function PropertyCard({ feature }: { feature: GeoJSONFeature }) {
-  const p = feature.properties;
+// SatPolygon — satélite (Esri export) + polígono SVG sobrepostos.
+// Alinhamento exato: img e SVG usam a mesma bbox expandida → projeção linear casa perfeitamente.
+// ponytail: preserveAspectRatio="none" + objectFit fill → ambos esticam idêntico ao container.
+function SatPolygon({
+  feature,
+  W,
+  H,
+  className = '',
+}: {
+  feature: GeoJSONFeature;
+  W: number;
+  H: number;
+  className?: string;
+}) {
   const bbox = featureBbox(feature);
-  const { label: stLabel, cls: stCls } = situacaoLabel(p.situacao);
+  if (!bbox) return <div className={`relative overflow-hidden bg-surface-container ${className}`} />;
 
-  let tileUrl: string | null = null;
-  if (bbox) {
-    const lon = (bbox[0] + bbox[2]) / 2;
-    const lat = (bbox[1] + bbox[3]) / 2;
-    tileUrl = toEsriTile(lon, lat, 15);
+  const [minLon, minLat, maxLon, maxLat] = bbox;
+  const m = 0.22;
+  const spanLon = maxLon - minLon || 0.001;
+  const spanLat = maxLat - minLat || 0.001;
+  const bMinLon = minLon - m * spanLon;
+  const bMinLat = minLat - m * spanLat;
+  const bMaxLon = maxLon + m * spanLon;
+  const bMaxLat = maxLat + m * spanLat;
+
+  const imgUrl =
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export' +
+    `?bbox=${bMinLon},${bMinLat},${bMaxLon},${bMaxLat}` +
+    `&bboxSR=4326&imageSR=4326&size=${W},${H}&format=jpg&f=image`;
+
+  const allCoords = getCoords(feature.geometry);
+  if (!allCoords.length) return <div className={`relative overflow-hidden bg-surface-container ${className}`} />;
+  const first = allCoords[0];
+  const last = allCoords[allCoords.length - 1];
+  const pts =
+    allCoords.length > 1 && first[0] === last[0] && first[1] === last[1]
+      ? allCoords.slice(0, -1)
+      : allCoords;
+
+  function project(lon: number, lat: number): [number, number] {
+    return [
+      ((lon - bMinLon) / (bMaxLon - bMinLon)) * W,
+      (1 - (lat - bMinLat) / (bMaxLat - bMinLat)) * H,
+    ];
   }
+
+  const svgPts = pts.map(([lon, lat]) => project(lon, lat));
+  const pointsAttr = svgPts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const showNumbers = pts.length <= 20;
+
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      <img
+        src={imgUrl}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full"
+        style={{ objectFit: 'fill' }}
+        loading="lazy"
+      />
+      <svg
+        className="absolute inset-0 h-full w-full"
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <polygon points={pointsAttr} fill="rgba(34,197,94,0.18)" stroke="#7CFFB0" strokeWidth="2.5" />
+        {showNumbers &&
+          svgPts.map(([x, y], i) => (
+            <g key={i}>
+              <circle cx={x} cy={y} r="7" fill="#052e16" stroke="#7CFFB0" strokeWidth="1.5" />
+              <text x={x} y={y + 4.5} textAnchor="middle" fill="#7CFFB0" fontSize="8" fontWeight="bold">
+                {i + 1}
+              </text>
+            </g>
+          ))}
+      </svg>
+    </div>
+  );
+}
+
+const TESTIMONIALS: Record<string, { text: string; author: string }> = {
+  ativo: {
+    text: 'A medição que fiz caminhando com o celular adiantou tudo. O técnico veio, conferiu os limites e o CAR saiu em menos de duas semanas. Sem o app eu nem sabia por onde começar.',
+    author: 'José Aparecido da Silva · produtor rural, Sorriso/MT',
+  },
+  em_analise: {
+    text: 'Já mandei a medição preliminar pro técnico de campo. Ele agendou a visita pra semana que vem — com o croqui já pronto ficou muito mais fácil acertar os detalhes.',
+    author: 'Maria Luzia Ferreira · agricultora familiar, Barra do Garças/MT',
+  },
+  pendente: {
+    text: 'Medi minha terra no app e já sei o que falta pra regularizar. Agora estou agendando a visita do técnico de campo com tudo na mão.',
+    author: 'Antônio Ramos de Oliveira · produtor rural, Querência/MT',
+  },
+  cancelado: {
+    text: 'Estou revisando os dados com o técnico. O app deixou o perímetro claro pra nossa conversa — agora é ajustar e retomar o processo.',
+    author: 'Cleuza Batista Souza · produtora rural, Nova Ubiratã/MT',
+  },
+};
+
+function getTestimonial(situacao: unknown): { text: string; author: string } {
+  const key = typeof situacao === 'string' ? situacao.toLowerCase() : '';
+  // ponytail: Record<string,T> is typed as T not T|undefined; ?? is runtime safety only
+  return (TESTIMONIALS[key] as { text: string; author: string } | undefined) ?? TESTIMONIALS['pendente'];
+}
+
+function PropertyModal({ feature, onClose }: { feature: GeoJSONFeature; onClose: () => void }) {
+  const p = feature.properties;
+  const { label: stLabel, cls: stCls } = situacaoLabel(p.situacao);
+  const nome = typeof p.nome === 'string' && p.nome ? p.nome : 'Imóvel Rural';
+  const municipio = typeof p.municipio === 'string' ? p.municipio : null;
+  const uf = typeof p.uf === 'string' ? p.uf : null;
+  const areaHa = typeof p.area_ha === 'number' ? p.area_ha : null;
+  const modulosFisc = p.modulos_fisc != null ? String(p.modulos_fisc) : null;
+  const atualizadoEm = fmtDate(p.atualizado_em);
+  const codCar = typeof p.cod_car === 'string' ? p.cod_car : null;
+  const testimonial = getTestimonial(p.situacao);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Detalhes — ${nome}`}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Sheet: mobile = bottom sheet (full width, rounded top); desktop = centered card */}
+      <div className="relative z-10 w-full max-h-[90dvh] overflow-y-auto rounded-t-2xl bg-surface-container-lowest shadow-2xl sm:mx-4 sm:max-w-2xl sm:rounded-3xl">
+        {/* Close button — min 44 × 44 px para toque */}
+        <button
+          ref={closeRef}
+          onClick={onClose}
+          className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-white"
+          aria-label="Fechar detalhes do imóvel"
+          title="Fechar"
+        >
+          <Sym name="close" className="text-xl" />
+        </button>
+
+        {/* Satélite + polígono — 16:10 responsivo */}
+        <SatPolygon
+          feature={feature}
+          W={1600}
+          H={1000}
+          className="w-full aspect-[16/10] rounded-t-2xl sm:rounded-t-3xl"
+        />
+
+        <div className="p-4 sm:p-6">
+          {/* Título + badge */}
+          <div className="mb-3 flex min-w-0 flex-wrap items-start justify-between gap-2">
+            <h2 className="min-w-0 flex-1 font-headline-md text-xl font-bold text-primary sm:text-2xl">
+              {nome}
+            </h2>
+            <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-bold ${stCls}`}>
+              {stLabel}
+            </span>
+          </div>
+
+          {(municipio || uf) && (
+            <p className="mb-4 flex items-center gap-1.5 text-sm text-on-surface-variant">
+              <Sym name="location_on" className="shrink-0 text-base text-secondary" />
+              <span>{[municipio, uf].filter(Boolean).join(' · ')}</span>
+            </p>
+          )}
+
+          {/* Dados em grid — 2 cols mobile, 4 cols sm */}
+          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            {areaHa !== null && (
+              <div className="rounded-xl bg-surface-container p-3">
+                <p className="text-xs text-on-surface-variant">Área</p>
+                <p className="font-bold text-primary">{areaHa.toFixed(2)} ha</p>
+              </div>
+            )}
+            {modulosFisc && (
+              <div className="rounded-xl bg-surface-container p-3">
+                <p className="text-xs text-on-surface-variant">Mód. fiscais</p>
+                <p className="font-bold text-primary">{modulosFisc}</p>
+              </div>
+            )}
+            {atualizadoEm && (
+              <div className="rounded-xl bg-surface-container p-3">
+                <p className="text-xs text-on-surface-variant">Atualizado em</p>
+                <p className="font-bold text-primary">{atualizadoEm}</p>
+              </div>
+            )}
+            {codCar && (
+              <div className="col-span-2 rounded-xl bg-surface-container p-3 sm:col-span-1">
+                <p className="text-xs text-on-surface-variant">Código CAR</p>
+                <p className="break-all font-mono text-xs font-bold text-primary">{codCar}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Depoimento ilustrativo */}
+          <div className="rounded-2xl border border-secondary/20 bg-secondary/5 p-4 sm:p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Sym name="format_quote" className="shrink-0 text-2xl text-secondary" />
+              <span className="text-xs font-bold uppercase tracking-widest text-secondary">
+                Relato do produtor
+              </span>
+            </div>
+            <blockquote className="mb-3 text-sm italic leading-relaxed text-on-surface-variant sm:text-base">
+              "{testimonial.text}"
+            </blockquote>
+            <footer className="text-sm font-semibold text-on-surface">{testimonial.author}</footer>
+            <p className="mt-2 text-[11px] text-outline">
+              Depoimento ilustrativo — não representa um cliente real verificado.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function PropertyCard({ feature }: { feature: GeoJSONFeature }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const p = feature.properties;
+  const { label: stLabel, cls: stCls } = situacaoLabel(p.situacao);
 
   const nome = typeof p.nome === 'string' && p.nome ? p.nome : 'Imóvel Rural';
   const municipio = typeof p.municipio === 'string' ? p.municipio : null;
@@ -526,59 +759,75 @@ function PropertyCard({ feature }: { feature: GeoJSONFeature }) {
   const modulosFisc = p.modulos_fisc != null ? String(p.modulos_fisc) : null;
   const atualizadoEm = fmtDate(p.atualizado_em);
 
+  function close() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      {/* Satellite tile header */}
-      <div className="relative h-32 overflow-hidden bg-surface-container">
-        {tileUrl && (
-          <img src={tileUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" loading="lazy" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full cursor-pointer overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label={`Ver detalhes de ${nome}`}
+      >
+        {/* Satélite 16:10 + polígono SVG + badges sobrepostos */}
+        <div className="relative w-full aspect-[16/10]">
+          <SatPolygon feature={feature} W={800} H={500} className="absolute inset-0 h-full w-full" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-        {/* Area badge — bottom-left */}
-        {areaHa !== null && (
-          <div className="absolute bottom-2 left-3 flex items-baseline gap-1">
-            <span className="font-headline-md text-2xl font-bold tabular-nums leading-none text-white drop-shadow">
-              {Math.round(areaHa).toLocaleString('pt-BR')}
-            </span>
-            <span className="text-xs font-semibold text-white/75 drop-shadow">ha</span>
+          {areaHa !== null && (
+            <div className="absolute bottom-2 left-3 flex items-baseline gap-1">
+              <span className="font-headline-md text-2xl font-bold tabular-nums leading-none text-white drop-shadow">
+                {Math.round(areaHa).toLocaleString('pt-BR')}
+              </span>
+              <span className="text-xs font-semibold text-white/75 drop-shadow">ha</span>
+            </div>
+          )}
+
+          <div className={`absolute right-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${stCls}`}>
+            {stLabel}
           </div>
-        )}
 
-        {/* Status badge — top-right */}
-        <div className={`absolute right-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${stCls}`}>
-          {stLabel}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold text-white/80 backdrop-blur-sm">
+            <Sym name="touch_app" className="text-[11px]" />
+            detalhes
+          </div>
         </div>
-      </div>
 
-      {/* Card body */}
-      <div className="p-4">
-        <h3 className="mb-0.5 truncate font-bold text-primary" title={nome}>
-          {nome}
-        </h3>
-        {(municipio || uf) && (
-          <p className="mb-3 text-sm text-on-surface-variant">
-            {[municipio, uf].filter(Boolean).join(' · ')}
-          </p>
-        )}
+        {/* Card body */}
+        <div className="p-4">
+          <h3 className="mb-0.5 truncate font-bold text-primary" title={nome}>
+            {nome}
+          </h3>
+          {(municipio || uf) && (
+            <p className="mb-3 text-sm text-on-surface-variant">
+              {[municipio, uf].filter(Boolean).join(' · ')}
+            </p>
+          )}
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-xs text-on-surface-variant">
-          <span>
-            <span className="font-semibold text-on-surface">Situação:</span> {stLabel}
-          </span>
-          {modulosFisc && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-xs text-on-surface-variant">
             <span>
-              <span className="font-semibold text-on-surface">Mód. fiscais:</span> {modulosFisc}
+              <span className="font-semibold text-on-surface">Situação:</span> {stLabel}
             </span>
-          )}
-          {atualizadoEm && (
-            <span>
-              <span className="font-semibold text-on-surface">Atualizado:</span> {atualizadoEm}
-            </span>
-          )}
+            {modulosFisc && (
+              <span>
+                <span className="font-semibold text-on-surface">Mód. fiscais:</span> {modulosFisc}
+              </span>
+            )}
+            {atualizadoEm && (
+              <span>
+                <span className="font-semibold text-on-surface">Atualizado:</span> {atualizadoEm}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </button>
+
+      {open && <PropertyModal feature={feature} onClose={close} />}
+    </>
   );
 }
 
