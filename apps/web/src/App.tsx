@@ -287,15 +287,40 @@ const NAV = [
   { label: 'API', href: '#api' },
 ] as const;
 
+// BrandMark — ícone de teste: polígono de 6 vértices (cara de medição de terra)
+// com a folha branca no meio.
+function BrandMark({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} role="img" aria-label="CAR Campo Geo API">
+      {/* polígono de 6 vértices irregular — cara de medição de terra */}
+      <path
+        d="M12 6 L34.5 8 L44 24 L33 43 L13.5 41 L4.5 22 Z"
+        fill="#16321f"
+        stroke="#2d5a27"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      {/* folha (eco) centralizada, branca — menor pra dar respiro no polígono */}
+      <path
+        transform="translate(14 15) scale(0.8)"
+        d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C3 11 8 8 17 8z"
+        fill="#ffffff"
+      />
+    </svg>
+  );
+}
+
 function TopBar() {
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 h-20 w-full border-b border-outline-variant bg-surface/95 backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 md:px-12">
-        <a href="#inicio" className="group flex items-center gap-3" aria-label="CAR Geo — início">
-          <Sym name="eco" filled className="text-3xl text-primary transition-transform group-hover:scale-110" />
-          <span className="font-headline-md text-2xl font-bold tracking-tight text-primary">CAR Geo</span>
+        <a href="#inicio" className="group flex items-center gap-2.5" aria-label="CAR Campo Geo API — início">
+          <BrandMark className="h-9 w-9 transition-transform group-hover:scale-110" />
+          <span className="font-headline-md text-xl font-bold tracking-tight text-primary sm:text-2xl">
+            CAR Campo <span className="text-secondary">Geo API</span>
+          </span>
         </a>
 
         <nav className="hidden items-center gap-10 md:flex" aria-label="Navegação principal">
@@ -382,7 +407,7 @@ function HeroSection({ features, stats }: { features: GeoJSONFeature[]; stats: S
           <p className="mb-8 max-w-xl font-body-lg text-body-lg text-on-surface-variant">
             O app <strong className="text-primary">CAR Campo</strong> ajuda o produtor a desenhar o perímetro
             do imóvel caminhando com o celular e aponta sobreposições com camadas ambientais oficiais. A{' '}
-            <strong className="text-primary">CAR Geo API</strong> serve esses dados do Cadastro Ambiental Rural
+            <strong className="text-primary">CAR Campo Geo API</strong> serve esses dados do Cadastro Ambiental Rural
             em REST + GeoJSON — leitura pública, sem chave.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -917,7 +942,7 @@ function MeasurementTechSection() {
             <FeatureCard
               icon="offline_bolt"
               title="Funciona offline"
-              text="Capturar, calcular e guardar a medição funcionam sem sinal. A sincronização com a CAR Geo API acontece quando há conexão."
+              text="Capturar, calcular e guardar a medição funcionam sem sinal. A sincronização com a CAR Campo Geo API acontece quando há conexão."
             />
           </div>
         </div>
@@ -1689,7 +1714,7 @@ function DocsSection() {
       <iframe
         className="block h-[640px] w-full rounded-xl border border-outline-variant bg-white"
         src={`${API_BASE_URL}/docs`}
-        title="Swagger UI — CAR Geo API"
+        title="Swagger UI — CAR Campo Geo API"
       />
     </div>
   );
@@ -1741,8 +1766,8 @@ function Footer() {
         <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-12">
           <div className="space-y-5 md:col-span-5">
             <div className="flex items-center gap-3">
-              <Sym name="eco" filled className="text-3xl text-primary-fixed-dim" />
-              <span className="font-headline-md text-2xl font-bold">CAR Geo · CAR Campo</span>
+              <BrandMark className="h-9 w-9" />
+              <span className="font-headline-md text-2xl font-bold">CAR Campo Geo API</span>
             </div>
             <p className="max-w-sm leading-relaxed text-surface-variant">
               Um auxílio inicial e gratuito para o pequeno produtor medir sua terra — e uma API aberta que
