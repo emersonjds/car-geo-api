@@ -214,6 +214,7 @@ export function App() {
       <HeroSection features={mapFeatures} stats={stats} />
       <StatsBar stats={stats} loading={mapLoading} />
       <ProducerSection />
+      <ReportSection />
       <MapSection features={mapFeatures} loading={mapLoading} error={mapError} />
       <InteropSection />
       <DevPortalSection collections={collections} collectionsError={collectionsError} />
@@ -281,14 +282,15 @@ function HeroSection({ features, stats }: { features: GeoJSONFeature[]; stats: S
       <div className="hero-content container">
         <div className="hero-badge" aria-label="Status">API pública · OGC Features</div>
         <h1>
-          Meça sua propriedade sobre os{' '}
-          <em>mapas oficiais</em>.{' '}
-          De graça.
+          Um auxílio inicial para o{' '}
+          <em>pequeno produtor</em>{' '}
+          medir sua terra.
         </h1>
         <p className="hero-sub">
-          CAR Geo API entrega polígonos do Cadastro Ambiental Rural em REST&nbsp;+&nbsp;GeoJSON,
-          prontos para sobrepor medições de campo e conferir metragem com o cadastro oficial.
-          Sem chave para leitura.
+          O app CAR&nbsp;Campo ajuda o produtor a desenhar o perímetro do imóvel caminhando com o
+          celular e aponta sobreposições com camadas ambientais oficiais. A CAR&nbsp;Geo&nbsp;API
+          serve esses dados do Cadastro Ambiental Rural em REST&nbsp;+&nbsp;GeoJSON — leitura
+          pública, sem chave.
         </p>
         <div className="hero-ctas">
           <a href="#mapa" className="btn btn-primary">Ver imóveis no mapa</a>
@@ -449,23 +451,23 @@ function StatItem({
 const PRODUCER_CARDS = [
   {
     icon: '📍',
-    title: 'Mede no campo, pelo celular',
-    text: 'Marque os limites da sua propriedade diretamente no campo, sem equipamento especial ou técnico no local.',
+    title: 'Mede caminhando com o celular',
+    text: 'Desenhe o perímetro do imóvel percorrendo a divisa por GPS. O app calcula área e perímetro na hora — e funciona offline, sem equipamento especial.',
   },
   {
-    icon: '🗺️',
-    title: 'Confere com o cadastro oficial',
-    text: 'Sobreponha sua medição aos polígonos do CAR e veja exatamente onde as metragens batem — ou diferem.',
+    icon: '⚠️',
+    title: 'Alerta sobreposições oficiais',
+    text: 'Cruza o imóvel com Terra Indígena, Unidade de Conservação, embargo do IBAMA, desmatamento e APP, a partir de fontes oficiais, e sinaliza os riscos.',
   },
   {
     icon: '🆓',
-    title: 'Sem custo, sem limite',
-    text: 'Acesso livre aos dados públicos do Cadastro Ambiental Rural. Sem assinatura, sem taxa, sem teto de requisições.',
+    title: 'Gratuito e como ponto de partida',
+    text: 'Um auxílio inicial e informativo para o pequeno produtor. Gera um croqui/relatório preliminar — não substitui o laudo oficial.',
   },
   {
-    icon: '📄',
-    title: 'Documento inicial de regularização',
-    text: 'O CAR é o primeiro passo da regularização ambiental. Use a API para integrar, validar e gerar relatórios.',
+    icon: '🤝',
+    title: 'Encaminha para o analista',
+    text: 'O resultado acelera a triagem do imóvel. A documentação oficial é emitida por analistas de campo parceiros.',
   },
 ] as const;
 
@@ -477,7 +479,7 @@ function ProducerSection() {
           <p className="section-label">CAR Campo</p>
           <h2 className="section-title">Para o produtor rural</h2>
           <p className="section-sub">
-            Da medição no campo à conferência com o mapa oficial, tudo em um fluxo simples e gratuito.
+            Da medição preliminar no campo ao encaminhamento para o analista — um ponto de partida gratuito para começar a regularização.
           </p>
         </div>
         <div className="producer-grid">
@@ -493,6 +495,47 @@ function ProducerSection() {
               <p>{card.text}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---- Report / consulta section ----
+
+function ReportSection() {
+  return (
+    <section id="relatorio" className="producer">
+      <div className="container">
+        <div className="producer-header" data-reveal>
+          <p className="section-label">Relatório preliminar</p>
+          <h2 className="section-title">Do campo a um documento inicial</h2>
+          <p className="section-sub">
+            Concluída a medição, o CAR&nbsp;Campo gera um relatório técnico <strong>preliminar</strong>{' '}
+            em PDF e um código de consulta. É uma base instrucional para o produtor e o analista —
+            não substitui o laudo oficial.
+          </p>
+        </div>
+        <div className="report-grid">
+          <ol className="report-flow" data-reveal>
+            <li><b>Mediu no app</b> — o perímetro percorrido vira um relatório em PDF.</li>
+            <li><b>Recebeu um código</b> — guarde o código junto do seu CPF.</li>
+            <li><b>Consulta quando quiser</b> — abra a medição pelo CPF&nbsp;+&nbsp;código.</li>
+          </ol>
+          <div className="report-cta" data-reveal>
+            <p className="report-cta-label">
+              Consulte sua medição preliminar para a visita do técnico.
+            </p>
+            <a
+              href={`${API_BASE_URL}/consulta`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-primary"
+            >
+              Consultar minha medição ↗
+            </a>
+            <p className="report-note">🔒 Acesso protegido por CPF&nbsp;+&nbsp;código.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -574,10 +617,11 @@ function MapSection({
             <span className="live-dot" aria-hidden="true" />
             Ao vivo
           </p>
-          <h2 className="section-title">Veja os imóveis rurais no mapa</h2>
+          <h2 className="section-title">Imóveis do CAR no mapa</h2>
           <p className="section-sub">
-            Arraste o divisor para comparar satélite e mapa oficial.
-            Clique em um imóvel para ver área e município.
+            Polígonos do Cadastro Ambiental Rural servidos em GeoJSON pela API pública (dados de
+            exemplo). Arraste para alternar entre satélite e mapa; clique em um imóvel para ver
+            área e município.
           </p>
         </div>
       </div>
@@ -776,7 +820,7 @@ function MapSwipeWidget({
             style={{ opacity: dividerPct < 88 ? 1 : 0 }}
             aria-hidden="true"
           >
-            Oficial
+            Mapa
           </div>
         </>
       )}
