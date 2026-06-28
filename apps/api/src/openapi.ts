@@ -12,7 +12,9 @@ export const openapiDocument = {
       'Gere uma chave gratuita no portal e use no header `X-API-Key`. haCARthon · Desafio 2 · Solução 7.',
     license: { name: 'MIT' },
   },
-  servers: [{ url: config.baseUrl }],
+  // URL relativa: o Swagger resolve as chamadas contra o mesmo host que serve o /docs,
+  // funcionando em local e em produção sem depender de env.
+  servers: [{ url: '/' }],
   tags: [
     { name: 'Meta', description: 'Landing, conformidade e coleções (público)' },
     { name: 'Dados', description: 'Feições geoespaciais em GeoJSON (requer chave)' },

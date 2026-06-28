@@ -11,6 +11,7 @@
     "dev:api": "yarn workspace @car-geo/api dev",
     "dev:web": "yarn workspace @car-geo/web dev",
     "build": "yarn workspace @car-geo/api build && yarn workspace @car-geo/web build",
+    "start": "yarn workspace @car-geo/api start",
     "typecheck": "yarn workspace @car-geo/api typecheck && yarn workspace @car-geo/web typecheck",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
