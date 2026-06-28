@@ -1,0 +1,52 @@
+# Render Blueprint — publica a CAR Geo API + Postgres gerenciado.
+#
+# Deploy: painel do Render -> New -> Blueprint -> conecte o repo
+# emersonjds/car-geo-api -> Apply. O Render cria o banco e o web service.
+#
+# Observações:
+# - O recurso de link de PDF (tabela `documento`, criada no boot) NÃO usa PostGIS —
+#   um Postgres comum basta. As coleções geográficas (/collections) precisariam de
+#   PostGIS + seed, que não são provisionados aqui (fora do escopo do link).
+# - Plano free: o web service "dorme" após inatividade; o 1º acesso ao link pode
+#   demorar alguns segundos (cold start). O Postgres free tem validade limitada.
+# - Ajuste PUBLIC_BASE_URL se o Render gerar um host diferente de car-geo-api.onrender.com.
+
+databases:
+  - name: car-geo-db
+    plan: free
+    databaseName: car_geo
+    user: car
+
+services:
+  - type: web
+    name: car-geo-api
+    runtime: node
+    plan: free
+    healthCheckPath: /health
+    buildCommand: yarn install --frozen-lockfile --production=false && yarn workspace @car-geo/api build
+    startCommand: yarn workspace @car-geo/api start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_BASE_URL
+        value: https://car-geo-api.onrender.com
+      - key: PGHOST
+        fromDatabase:
+          name: car-geo-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: car-geo-db
+          property: port
+      - key: PGUSER
+        fromDatabase:
+          name: car-geo-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: car-geo-db
+          property: password
+      - key: PGDATABASE
+        fromDatabase:
+          name: car-geo-db
+          property: database
