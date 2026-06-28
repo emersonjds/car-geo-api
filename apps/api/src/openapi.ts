@@ -19,6 +19,7 @@ export const openapiDocument = {
     { name: 'Meta', description: 'Landing, conformidade e coleções (público)' },
     { name: 'Dados', description: 'Feições geoespaciais em GeoJSON (público)' },
     { name: 'Chaves', description: 'Geração de chave de API (público)' },
+    { name: 'Documentos', description: 'Relatório preliminar do CAR Campo — PDF, link e consulta por CPF + código (público)' },
   ],
   components: {
     securitySchemes: {
@@ -51,6 +52,34 @@ export const openapiDocument = {
           features: { type: 'array', items: { type: 'object' } },
           numberMatched: { type: 'integer' },
           numberReturned: { type: 'integer' },
+        },
+      },
+      NovoDocumentoRequest: {
+        type: 'object',
+        required: ['pdf_base64'],
+        properties: {
+          pdf_base64: { type: 'string', description: 'PDF da medição codificado em base64 (até 8 MB)' },
+          nome: { type: 'string', example: 'Medição — Fazenda Boa Esperança' },
+          cpf: { type: 'string', example: '000.000.000-00', description: 'Opcional; se enviado, protege a consulta (guardado como hash)' },
+        },
+      },
+      DocumentoResponse: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          codigo: { type: 'string', example: 'K7M2QX', description: 'Código curto para consulta' },
+          url: { type: 'string', description: 'Link direto do PDF' },
+          view_url: { type: 'string', description: 'Página de visualização' },
+          nome: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      ConsultaLookupRequest: {
+        type: 'object',
+        required: ['codigo'],
+        properties: {
+          codigo: { type: 'string', example: 'K7M2QX' },
+          cpf: { type: 'string', example: '000.000.000-00', description: 'Exigido se o documento foi salvo com CPF' },
         },
       },
     },
@@ -131,6 +160,66 @@ export const openapiDocument = {
             description: 'Chave criada (guarde — só aparece uma vez)',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/NovaChaveResponse' } } },
           },
+        },
+      },
+    },
+    '/documentos': {
+      post: {
+        tags: ['Documentos'],
+        summary: 'Enviar relatório preliminar (PDF) e receber link + código',
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/NovoDocumentoRequest' } } },
+        },
+        responses: {
+          '201': {
+            description: 'Documento salvo',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/DocumentoResponse' } } },
+          },
+          '400': { description: 'PDF ausente ou inválido' },
+        },
+      },
+    },
+    '/documentos/{id}': {
+      get: {
+        tags: ['Documentos'],
+        summary: 'Baixar o PDF do documento',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'PDF', content: { 'application/pdf': {} } },
+          '404': { description: 'Não encontrado' },
+        },
+      },
+    },
+    '/documentos/{id}/ver': {
+      get: {
+        tags: ['Documentos'],
+        summary: 'Página de visualização do documento',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Página HTML', content: { 'text/html': {} } },
+          '404': { description: 'Não encontrado' },
+        },
+      },
+    },
+    '/consulta': {
+      get: {
+        tags: ['Documentos'],
+        summary: 'Página pública de consulta (CPF + código)',
+        responses: { '200': { description: 'Página HTML', content: { 'text/html': {} } } },
+      },
+    },
+    '/consulta/lookup': {
+      post: {
+        tags: ['Documentos'],
+        summary: 'Localiza a medição por código e confere o CPF',
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/ConsultaLookupRequest' } } },
+        },
+        responses: {
+          '200': { description: 'Encontrado — retorna { ok, view_url }' },
+          '404': { description: 'Código inexistente ou CPF não confere' },
         },
       },
     },
