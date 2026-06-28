@@ -126,15 +126,19 @@ export async function registerRoutes(app: FastifyInstance) {
     const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${nome} · CAR Campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1b12;color:#e9f0ea}
-  header{display:flex;align-items:center;gap:10px;padding:14px 20px;background:#16321f}
-  header b{font-size:16px} header span{color:#9bbfa6;font-size:13px}
-  main{max-width:960px;margin:0 auto;padding:16px}
-  iframe{width:100%;height:78vh;border:0;border-radius:10px;background:#fff}
-  a.btn{display:inline-block;margin-top:12px;padding:10px 18px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:8px;font-weight:600}
+  *{box-sizing:border-box} body{margin:0;font-family:'Work Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#eef3ee;color:#191c1d}
+  header{display:flex;align-items:center;gap:8px;padding:14px 22px;background:#fff;border-bottom:1px solid #dce5dd}
+  header .leaf{width:26px;height:26px;border-radius:50% 50% 50% 6px;background:#2d5a27;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+  header b{font-size:16px;color:#012d1d} header .crumb{color:#5b6b5d;font-size:13px}
+  main{max-width:960px;margin:0 auto;padding:20px 16px}
+  iframe{width:100%;height:78vh;border:1px solid #dce5dd;border-radius:14px;background:#fff;box-shadow:0 18px 40px rgba(16,40,24,0.08)}
+  a.btn{display:inline-block;margin-top:14px;padding:12px 20px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:12px;font-weight:700}
+  a.btn:hover{background:#23491f}
 </style></head><body>
-<header><span>🌿</span><b>CAR Campo</b><span>· Medição preliminar</span></header>
+<header><span class="leaf">🌿</span><b>CAR Campo</b><span class="crumb">· Medição preliminar</span></header>
 <main>
   <iframe src="${pdf}" title="${nome}"></iframe>
   <a class="btn" href="${pdf}" download>Baixar PDF</a>
@@ -147,29 +151,42 @@ export async function registerRoutes(app: FastifyInstance) {
     const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Consultar medição · CAR Campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1b12;color:#e9f0ea}
-  header{display:flex;align-items:center;gap:10px;padding:14px 20px;background:#16321f}
-  header b{font-size:16px} header span{color:#9bbfa6;font-size:13px}
-  main{max-width:460px;margin:0 auto;padding:24px 16px}
-  h1{font-size:22px;margin:8px 0 18px}
-  label{display:block;margin:14px 0 6px;font-size:14px;color:#9bbfa6}
-  input{width:100%;padding:12px 14px;border:1px solid #2d5a27;border-radius:8px;background:#10241a;color:#e9f0ea;font-size:16px}
-  button{width:100%;margin-top:20px;padding:13px 18px;background:#2d5a27;color:#fff;border:0;border-radius:8px;font-weight:600;font-size:16px;cursor:pointer}
-  #erro{margin-top:14px;color:#f3b0a8;font-size:14px;min-height:18px}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:'Work Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#eef3ee;color:#191c1d}
+  header{display:flex;align-items:center;gap:8px;padding:14px 22px;background:#fff;border-bottom:1px solid #dce5dd}
+  header .leaf{width:26px;height:26px;border-radius:50% 50% 50% 6px;background:#2d5a27;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+  header b{font-size:16px;color:#012d1d} header .crumb{color:#5b6b5d;font-size:13px}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .card{width:100%;max-width:440px;background:#fff;border:1px solid #dce5dd;border-radius:20px;padding:28px 26px;box-shadow:0 18px 40px rgba(16,40,24,0.08)}
+  h1{font-size:24px;margin:0 0 4px;color:#012d1d;letter-spacing:-0.01em}
+  .sub{margin:0 0 20px;font-size:14px;color:#5b6b5d}
+  label{display:block;margin:16px 0 6px;font-size:13px;font-weight:600;color:#3a4a3c}
+  input{width:100%;padding:13px 14px;border:1px solid #c2d0c4;border-radius:12px;background:#f8faf8;color:#191c1d;font-size:16px;transition:border-color .15s,box-shadow .15s}
+  input:focus{outline:none;border-color:#2d5a27;box-shadow:0 0 0 3px rgba(45,90,39,0.15)}
+  button{width:100%;margin-top:22px;padding:14px 18px;background:#2d5a27;color:#fff;border:0;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;transition:background .15s}
+  button:hover{background:#23491f}
+  #erro{margin-top:14px;color:#ba1a1a;font-size:14px;min-height:18px}
+  footer{padding:16px;text-align:center;font-size:12px;color:#5b6b5d}
 </style></head><body>
-<header><span>🌿</span><b>CAR Campo</b><span>· Consulta</span></header>
+<header><span class="leaf">🌿</span><b>CAR Campo</b><span class="crumb">· Consulta de medição</span></header>
 <main>
-  <h1>Consultar medição</h1>
-  <form id="f">
-    <label for="codigo">Código da medição</label>
-    <input id="codigo" name="codigo" autocapitalize="characters" autocomplete="off" placeholder="Ex.: K7M2QX" style="text-transform:uppercase">
-    <label for="cpf">CPF (opcional)</label>
-    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00">
-    <button type="submit">Ver medição</button>
-    <div id="erro"></div>
-  </form>
+  <div class="card">
+    <h1>Consultar medição</h1>
+    <p class="sub">Informe o código gerado no app CAR Campo para abrir o documento preliminar.</p>
+    <form id="f">
+      <label for="codigo">Código da medição</label>
+      <input id="codigo" name="codigo" autocapitalize="characters" autocomplete="off" placeholder="Ex.: K7M2QX" style="text-transform:uppercase">
+      <label for="cpf">CPF (opcional)</label>
+      <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00">
+      <button type="submit">Ver medição</button>
+      <div id="erro"></div>
+    </form>
+  </div>
 </main>
+<footer>CAR Campo · haCARthon — Desafio 2 · Solução 7</footer>
 <script>
   // Máscara de CPF: formata 000.000.000-00 enquanto digita (server ignora a pontuação).
   var cpfEl = document.getElementById('cpf');
