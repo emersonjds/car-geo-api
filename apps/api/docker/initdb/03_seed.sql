@@ -1,247 +1,34 @@
 -- ---------------------------------------------------------------------------
--- Dados de exemplo (sintéticos, didáticos) — região de Sinop/MT.
--- Coordenadas em lon/lat SIRGAS 2000 (EPSG:4674 ≈ WGS84 para fins didáticos).
--- Bounding box geral: lon -55.70..-55.42, lat -11.88..-11.80
--- NÃO usar em produção. Executado na 1ª subida do PostGIS (via docker/initdb)
--- e pelo bootstrap da API quando a tabela imovel está vazia.
+-- Dados de exemplo (sintéticos) — fazendas no interior de MT (áreas rurais),
+-- polígonos de 6 vértices fora das manchas urbanas. EPSG:4674.
+-- A API reprojeta para WGS84 (4326) ao servir GeoJSON.
 -- ---------------------------------------------------------------------------
 
--- ===========================================================================
--- IMÓVEIS (12 feições)
--- Polígonos retangulares, sem sobreposição, espalhados na região.
--- area_ha calculada a partir das dimensões do polígono em projeção UTM-21S.
--- módulo fiscal de referência: ~90 ha (Sinop/Sorriso/Vera/Cláudia - MT).
--- ===========================================================================
 INSERT INTO imovel (cod_car, nome, municipio, uf, area_ha, modulos_fisc, situacao, geom) VALUES
+('MT-5107900-01A1B2C3D4E5F6A7B8C9D0E1F2A3B400', 'Fazenda Boa Esperança', 'Sinop', 'MT', 518.0, 5.18, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-55.287 -11.65, -55.29402 -11.639642, -55.30689 -11.638066, -55.31261 -11.65, -55.306825 -11.661821, -55.29389 -11.660583, -55.287 -11.65))', 4674))),
+('MT-5107901-021B2C3D4E5F6A7B8C9D0E1F2A3B4C00', 'Sítio Três Irmãos', 'Sinop', 'MT', 196.0, 1.96, 'pendente', ST_Multi(ST_GeomFromText('POLYGON((-55.722 -11.98, -55.72632 -11.973626, -55.73424 -11.972656, -55.73776 -11.98, -55.7342 -11.987275, -55.72624 -11.986513, -55.722 -11.98))', 4674))),
+('MT-5107902-03B2C3D4E5F6A7B8C9D0E1F2A3B4C500', 'Fazenda Rio Verde', 'Sinop', 'MT', 784.0, 7.84, 'em_analise', ST_Multi(ST_GeomFromText('POLYGON((-55.154 -11.78, -55.16264 -11.767252, -55.17848 -11.765312, -55.18552 -11.78, -55.1784 -11.794549, -55.16248 -11.793025, -55.154 -11.78))', 4674))),
+('MT-5107903-042C3D4E5F6A7B8C9D0E1F2A3B4C5D00', 'Fazenda Santa Lúcia', 'Sorriso', 'MT', 599.0, 5.99, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-55.946 -12.4, -55.95356 -12.388846, -55.96742 -12.387148, -55.97358 -12.4, -55.96735 -12.412731, -55.95342 -12.411397, -55.946 -12.4))', 4674))),
+('MT-5107904-05C3D4E5F6A7B8C9D0E1F2A3B4C5D600', 'Fazenda Primavera', 'Sorriso', 'MT', 439.0, 4.39, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-55.528 -12.71, -55.53448 -12.700439, -55.54636 -12.698984, -55.55164 -12.71, -55.5463 -12.720912, -55.53436 -12.719769, -55.528 -12.71))', 4674))),
+('MT-5107905-063D4E5F6A7B8C9D0E1F2A3B4C5D6000', 'Sítio Bela Vista', 'Sorriso', 'MT', 247.0, 2.47, 'pendente', ST_Multi(ST_GeomFromText('POLYGON((-55.891 -12.76, -55.89586 -12.752829, -55.90477 -12.751738, -55.90873 -12.76, -55.904725 -12.768184, -55.89577 -12.767327, -55.891 -12.76))', 4674))),
+('MT-5107906-07D4E5F6A7B8C9D0E1F2A3B4C5D60000', 'Fazenda Canaã', 'Vera', 'MT', 688.0, 6.88, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-55.085 -12.15, -55.0931 -12.138049, -55.10795 -12.13623, -55.11455 -12.15, -55.107875 -12.16364, -55.09295 -12.162211, -55.085 -12.15))', 4674))),
+('MT-5107907-084E5F6A7B8C9D0E1F2A3B4C5D600000', 'Sítio Ipê Amarelo', 'Vera', 'MT', 195.0, 1.95, 'cancelado', ST_Multi(ST_GeomFromText('POLYGON((-55.442 -12.46, -55.44632 -12.453626, -55.45424 -12.452656, -55.45776 -12.46, -55.4542 -12.467275, -55.44624 -12.466513, -55.442 -12.46))', 4674))),
+('MT-5107908-09E5F6A7B8C9D0E1F2A3B4C5D6000000', 'Fazenda Nova Aliança', 'Cláudia', 'MT', 518.0, 5.18, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-54.687 -11.65, -54.69402 -11.639642, -54.70689 -11.638066, -54.71261 -11.65, -54.706825 -11.661821, -54.69389 -11.660583, -54.687 -11.65))', 4674))),
+('MT-5107909-0A5F6A7B8C9D0E1F2A3B4C5D60000000', 'Fazenda Dois Córregos', 'Cláudia', 'MT', 370.0, 3.7, 'em_analise', ST_Multi(ST_GeomFromText('POLYGON((-54.949 -11.95, -54.95494 -11.941236, -54.96583 -11.939902, -54.97067 -11.95, -54.965775 -11.960003, -54.95483 -11.958955, -54.949 -11.95))', 4674))),
+('MT-5107910-0BF6A7B8C9D0E1F2A3B4C5D600000000', 'Fazenda Vale do Sol', 'Feliz Natal', 'MT', 598.0, 5.98, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-54.746 -12.56, -54.75356 -12.548846, -54.76742 -12.547148, -54.77358 -12.56, -54.76735 -12.572731, -54.75342 -12.571397, -54.746 -12.56))', 4674))),
+('MT-5107911-0C6A7B8C9D0E1F2A3B4C5D6000000000', 'Sítio Recanto Feliz', 'Feliz Natal', 'MT', 247.0, 2.47, 'ativo', ST_Multi(ST_GeomFromText('POLYGON((-55.041 -12.61, -55.04586 -12.602829, -55.05477 -12.601738, -55.05873 -12.61, -55.054725 -12.618184, -55.04577 -12.617327, -55.041 -12.61))', 4674)));
 
--- ---- Sinop (IBGE 5107909) -----------------------------------------------
-
-(
-  'MT-5107909-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6',
-  'Fazenda Boa Esperança', 'Sinop', 'MT', 412.50, 4.58, 'ativo',
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.520 -11.860, -55.500 -11.860, -55.500 -11.878, -55.520 -11.878, -55.520 -11.860))',
-  4674))
-),
-(
-  'MT-5107909-B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7',
-  'Sítio Três Irmãos', 'Sinop', 'MT', 88.20, 0.98, 'pendente',
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.498 -11.862, -55.486 -11.862, -55.486 -11.872, -55.498 -11.872, -55.498 -11.862))',
-  4674))
-),
-(
-  'MT-5107909-C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8',
-  'Fazenda Rio Verde', 'Sinop', 'MT', 1240.00, 13.78, 'em_analise',
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.484 -11.855, -55.455 -11.855, -55.455 -11.885, -55.484 -11.885, -55.484 -11.855))',
-  4674))
-),
-(
-  'MT-5107909-F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7',
-  'Fazenda Santa Clara', 'Sinop', 'MT', 800.80, 8.90, 'ativo',
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.450 -11.858, -55.420 -11.858, -55.420 -11.880, -55.450 -11.880, -55.450 -11.858))',
-  4674))
-),
-
--- ---- Sorriso (IBGE 5107925) ----------------------------------------------
-
-(
-  'MT-5107925-D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9',
-  'Fazenda São Lucas', 'Sorriso', 'MT', 1061.70, 11.80, 'ativo',
-  -- lon -55.700..-55.665 (Δ0.035°), lat -11.825..-11.800 (Δ0.025°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.700 -11.800, -55.665 -11.800, -55.665 -11.825, -55.700 -11.825, -55.700 -11.800))',
-  4674))
-),
-(
-  'MT-5107925-E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0',
-  'Fazenda Três Marias', 'Sorriso', 'MT', 1188.80, 13.21, 'pendente',
-  -- lon -55.660..-55.625 (Δ0.035°), lat -11.828..-11.800 (Δ0.028°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.660 -11.800, -55.625 -11.800, -55.625 -11.828, -55.660 -11.828, -55.660 -11.800))',
-  4674))
-),
-(
-  'MT-5107925-B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3',
-  'Fazenda Primavera', 'Sorriso', 'MT', 1213.10, 13.48, 'ativo',
-  -- lon -55.700..-55.660 (Δ0.040°), lat -11.855..-11.830 (Δ0.025°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.700 -11.830, -55.660 -11.830, -55.660 -11.855, -55.700 -11.855, -55.700 -11.830))',
-  4674))
-),
-
--- ---- Cláudia (IBGE 5103056) ---------------------------------------------
-
-(
-  'MT-5103056-F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1',
-  'Sítio Bela Vista', 'Cláudia', 'MT', 970.70, 10.79, 'ativo',
-  -- lon -55.620..-55.588 (Δ0.032°), lat -11.825..-11.800 (Δ0.025°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.620 -11.800, -55.588 -11.800, -55.588 -11.825, -55.620 -11.825, -55.620 -11.800))',
-  4674))
-),
-(
-  'MT-5103056-A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2',
-  'Fazenda Nova Aurora', 'Cláudia', 'MT', 976.60, 10.85, 'cancelado',
-  -- lon -55.583..-55.548 (Δ0.035°), lat -11.823..-11.800 (Δ0.023°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.583 -11.800, -55.548 -11.800, -55.548 -11.823, -55.583 -11.823, -55.583 -11.800))',
-  4674))
-),
-(
-  'MT-5103056-E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6',
-  'Fazenda Cerrado Vivo', 'Cláudia', 'MT', 849.30, 9.44, 'ativo',
-  -- lon -55.565..-55.530 (Δ0.035°), lat -11.850..-11.830 (Δ0.020°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.565 -11.830, -55.530 -11.830, -55.530 -11.850, -55.565 -11.850, -55.565 -11.830))',
-  4674))
-),
-
--- ---- Vera (IBGE 5108402) ------------------------------------------------
-
-(
-  'MT-5108402-C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4',
-  'Fazenda Campo Largo', 'Vera', 'MT', 1116.20, 12.40, 'em_analise',
-  -- lon -55.655..-55.615 (Δ0.040°), lat -11.853..-11.830 (Δ0.023°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.655 -11.830, -55.615 -11.830, -55.615 -11.853, -55.655 -11.853, -55.655 -11.830))',
-  4674))
-),
-(
-  'MT-5108402-D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5',
-  'Sítio Ipê Amarelo', 'Vera', 'MT', 1067.80, 11.86, 'pendente',
-  -- lon -55.610..-55.570 (Δ0.040°), lat -11.852..-11.830 (Δ0.022°)
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.610 -11.830, -55.570 -11.830, -55.570 -11.852, -55.610 -11.852, -55.610 -11.830))',
-  4674))
-);
-
-
--- ===========================================================================
--- APP — Áreas de Preservação Permanente (8 feições)
--- Geometrias dentro dos respectivos imóveis. Tipos: margem_rio (30 m de
--- faixa marginal do leito regular), nascente (raio 50 m), topo_morro,
--- encosta. Valores de area_ha sintéticos/aproximados.
--- ===========================================================================
+-- Áreas de Preservação Permanente (APP) próximas a algumas fazendas
 INSERT INTO app (cod_car, tipo, area_ha, geom) VALUES
+('MT-5107900-01A1B2C3D4E5F6A7B8C9D0E1F2A3B400', 'margem_rio', 49.0, ST_Multi(ST_GeomFromText('POLYGON((-55.29 -11.646, -55.29216 -11.642813, -55.29612 -11.642328, -55.29788 -11.646, -55.2961 -11.649637, -55.29212 -11.649256, -55.29 -11.646))', 4674))),
+('MT-5107902-03B2C3D4E5F6A7B8C9D0E1F2A3B4C500', 'nascente', 19.0, ST_Multi(ST_GeomFromText('POLYGON((-55.1615 -11.776, -55.16285 -11.774008, -55.165325 -11.773705, -55.166425 -11.776, -55.165312 -11.778273, -55.162825 -11.778035, -55.1615 -11.776))', 4674))),
+('MT-5107903-042C3D4E5F6A7B8C9D0E1F2A3B4C5D00', 'topo_morro', 76.0, ST_Multi(ST_GeomFromText('POLYGON((-55.949 -12.396, -55.9517 -12.392016, -55.95665 -12.39141, -55.95885 -12.396, -55.956625 -12.400547, -55.95165 -12.40007, -55.949 -12.396))', 4674))),
+('MT-5107906-07D4E5F6A7B8C9D0E1F2A3B4C5D60000', 'encosta', 49.0, ST_Multi(ST_GeomFromText('POLYGON((-55.09 -12.146, -55.09216 -12.142813, -55.09612 -12.142328, -55.09788 -12.146, -55.0961 -12.149637, -55.09212 -12.149256, -55.09 -12.146))', 4674))),
+('MT-5107908-09E5F6A7B8C9D0E1F2A3B4C5D6000000', 'margem_rio', 49.0, ST_Multi(ST_GeomFromText('POLYGON((-54.69 -11.646, -54.69216 -11.642813, -54.69612 -11.642328, -54.69788 -11.646, -54.6961 -11.649637, -54.69212 -11.649256, -54.69 -11.646))', 4674))),
+('MT-5107910-0BF6A7B8C9D0E1F2A3B4C5D600000000', 'nascente', 19.0, ST_Multi(ST_GeomFromText('POLYGON((-54.7515 -12.556, -54.75285 -12.554008, -54.755325 -12.553705, -54.756425 -12.556, -54.755312 -12.558273, -54.752825 -12.558035, -54.7515 -12.556))', 4674)));
 
--- APP 1: faixa marginal do Córrego da Onça — Fazenda Boa Esperança
--- (paralelogramo representando faixa inclinada junto ao curso d'água)
-(
-  'MT-5107909-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6',
-  'margem_rio', 6.4,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.516 -11.862, -55.514 -11.862, -55.508 -11.876, -55.510 -11.876, -55.516 -11.862))',
-  4674))
-),
-
--- APP 2: raio de nascente — Fazenda Rio Verde
-(
-  'MT-5107909-C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8',
-  'nascente', 1.1,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.470 -11.866, -55.468 -11.866, -55.468 -11.868, -55.470 -11.868, -55.470 -11.866))',
-  4674))
-),
-
--- APP 3: faixa marginal do Córrego da Onça — Fazenda Primavera (Sorriso)
--- faixa de ~218 m × 1113 m ao longo do corrego (sintético/didático)
-(
-  'MT-5107925-B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3',
-  'margem_rio', 24.3,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.682 -11.838, -55.680 -11.838, -55.680 -11.848, -55.682 -11.848, -55.682 -11.838))',
-  4674))
-),
-
--- APP 4: raio de nascente — Fazenda São Lucas (Sorriso)
--- ~100 m × 100 m ao redor do ponto de nascente (approx 50 m de raio)
-(
-  'MT-5107925-D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9',
-  'nascente', 1.2,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.692 -11.809, -55.691 -11.809, -55.691 -11.810, -55.692 -11.810, -55.692 -11.809))',
-  4674))
-),
-
--- APP 5: topo de morro — Fazenda Três Marias (Sorriso)
-(
-  'MT-5107925-E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0',
-  'topo_morro', 10.9,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.650 -11.808, -55.647 -11.808, -55.647 -11.811, -55.650 -11.811, -55.650 -11.808))',
-  4674))
-),
-
--- APP 6: encosta (declividade > 45°) — Fazenda Campo Largo (Vera)
-(
-  'MT-5108402-C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4',
-  'encosta', 19.4,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.645 -11.836, -55.641 -11.836, -55.641 -11.840, -55.645 -11.840, -55.645 -11.836))',
-  4674))
-),
-
--- APP 7: faixa marginal do Córrego do Canivete — Sítio Ipê Amarelo (Vera)
--- faixa centrada sobre o eixo do córrego em lon ≈ -55.592
-(
-  'MT-5108402-D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5',
-  'margem_rio', 19.4,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.594 -11.836, -55.590 -11.836, -55.590 -11.844, -55.594 -11.844, -55.594 -11.836))',
-  4674))
-),
-
--- APP 8: topo de morro — Fazenda Cerrado Vivo (Cláudia)
-(
-  'MT-5103056-E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6',
-  'topo_morro', 30.4,
-  ST_Multi(ST_GeomFromText(
-    'POLYGON((-55.558 -11.835, -55.553 -11.835, -55.553 -11.840, -55.558 -11.840, -55.558 -11.835))',
-  4674))
-);
-
-
--- ===========================================================================
--- HIDROGRAFIA (4 feições)
--- MultiLineString representando trechos de rios, córregos e nascente
--- na região de Sinop/MT. Fluxo geral: norte → sul (lat decrescente).
--- ===========================================================================
+-- Hidrografia de referência (rios/córregos no interior)
 INSERT INTO hidrografia (nome, tipo, geom) VALUES
-
--- Rio Teles Pires — trecho leste (atravessa imóveis 1-3, referência principal)
-(
-  'Rio Teles Pires (trecho)', 'rio',
-  ST_Multi(ST_GeomFromText(
-    'LINESTRING(-55.520 -11.860, -55.512 -11.870, -55.500 -11.875, -55.484 -11.880, -55.460 -11.884)',
-  4674))
-),
-
--- Córrego do Canivete — afluente pela margem direita do Teles Pires
--- atravessa imóveis 9 e 10 (Vera), origem norte, desemboca ~lat -11.882
-(
-  'Córrego do Canivete', 'corrego',
-  ST_Multi(ST_GeomFromText(
-    'LINESTRING(-55.600 -11.800, -55.597 -11.815, -55.594 -11.828, -55.592 -11.840, -55.590 -11.855, -55.588 -11.870, -55.585 -11.882)',
-  4674))
-),
-
--- Córrego da Onça — drena imóveis 4 e 8 (Sorriso), segue rumo sul
--- margem coincide com APP 1 (Fazenda Boa Esperança) e APP 3 (Fazenda Primavera)
-(
-  'Córrego da Onça', 'corrego',
-  ST_Multi(ST_GeomFromText(
-    'LINESTRING(-55.682 -11.800, -55.681 -11.815, -55.681 -11.830, -55.680 -11.845, -55.680 -11.855)',
-  4674))
-),
-
--- Nascente do Cerrado — cabeceira de drenagem dentro da Fazenda São Lucas
--- representa o ponto de surgência de água (APP 4)
-(
-  'Nascente do Cerrado', 'nascente',
-  ST_Multi(ST_GeomFromText(
-    'LINESTRING(-55.692 -11.808, -55.691 -11.809, -55.690 -11.811)',
-  4674))
-);
+('Córrego do Jacaré', 'corrego', ST_Multi(ST_GeomFromText('LINESTRING(-55.320 -11.640, -55.300 -11.655, -55.280 -11.665, -55.260 -11.680)', 4674))),
+('Rio das Pedras', 'rio', ST_Multi(ST_GeomFromText('LINESTRING(-55.980 -12.380, -55.955 -12.400, -55.930 -12.420, -55.900 -12.435)', 4674))),
+('Córrego Bonito', 'corrego', ST_Multi(ST_GeomFromText('LINESTRING(-54.720 -11.630, -54.700 -11.650, -54.680 -11.668, -54.660 -11.685)', 4674)));
