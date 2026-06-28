@@ -1,0 +1,22 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: car-geo-postgis
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: car
+      POSTGRES_PASSWORD: car
+      POSTGRES_DB: car_geo
+    ports:
+      - "5433:5432"
+    volumes:
+      - car_geo_pgdata:/var/lib/postgresql/data
+      - ./apps/api/docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U car -d car_geo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  car_geo_pgdata:

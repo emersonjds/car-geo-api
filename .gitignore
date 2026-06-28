@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+apps/web/dist/
+.vite/
+*.tsbuildinfo
+.env
+.env.local
+*.log
+.DS_Store
+.claude/settings.local.json

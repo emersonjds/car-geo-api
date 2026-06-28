@@ -1,0 +1,22 @@
+{
+  "name": "car-geo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo da plataforma CAR Geo — API geoespacial aberta (OGC API Features) + portal de desenvolvedor. haCARthon · Desafio 2 · Solução 7.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"yarn workspace @car-geo/api dev\" \"yarn workspace @car-geo/web dev\"",
+    "dev:api": "yarn workspace @car-geo/api dev",
+    "dev:web": "yarn workspace @car-geo/web dev",
+    "build": "yarn workspace @car-geo/api build && yarn workspace @car-geo/web build",
+    "typecheck": "yarn workspace @car-geo/api typecheck && yarn workspace @car-geo/web typecheck",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgis"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
