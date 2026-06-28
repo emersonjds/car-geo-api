@@ -1395,8 +1395,8 @@ function ReportSection() {
 
         <div className="flex flex-col gap-4 lg:col-span-7">
           <BrowserFrame
-            src="/visao-web.png"
-            alt="PDF do laudo preliminar aberto no navegador — croqui do perímetro, tabela de vértices WGS84 e dados do imóvel Sítio Boa Esperança gerados pelo app CAR Campo"
+            src="/visao-web-3.png"
+            alt="PDF do laudo preliminar aberto no navegador — croqui do perímetro sobre o mapa de satélite da medição, tabela de vértices WGS84 e dados do imóvel Sítio Boa Esperança gerados pelo app CAR Campo"
           />
           <p className="flex items-start gap-2 text-sm leading-relaxed text-on-surface-variant">
             <Sym name="picture_as_pdf" className="mt-0.5 shrink-0 text-base text-secondary" />
