@@ -162,10 +162,10 @@ export async function registerRoutes(app: FastifyInstance) {
 <main>
   <h1>Consultar medição</h1>
   <form id="f">
-    <label for="cpf">CPF</label>
-    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00">
-    <label for="codigo">Código</label>
+    <label for="codigo">Código da medição</label>
     <input id="codigo" name="codigo" autocapitalize="characters" autocomplete="off" placeholder="Ex.: K7M2QX" style="text-transform:uppercase">
+    <label for="cpf">CPF (opcional)</label>
+    <input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00">
     <button type="submit">Ver medição</button>
     <div id="erro"></div>
   </form>
@@ -205,8 +205,10 @@ export async function registerRoutes(app: FastifyInstance) {
     return reply.type('text/html').send(html);
   });
 
-  // Lookup da consulta — acha por código e confere o CPF (hash). Não vaza se erro
-  // é "código inexistente" ou "CPF errado": ambos respondem 404 { ok:false }.
+  // Lookup da consulta — acha por código curto. O código (6 chars, gerado no
+  // servidor) é o segredo de acesso; o CPF é uma conferência OPCIONAL, não bloqueia
+  // (evita travar a consulta no pitch por divergência/typo de CPF).
+  // ponytail: código-only; se a privacidade exigir, reativar o gate de CPF abaixo.
   app.post<{ Body: { cpf?: string; codigo?: string } }>('/consulta/lookup', async (req, reply) => {
     const body = req.body ?? {};
     if (typeof body.codigo !== 'string' || body.codigo.trim().length === 0) {
@@ -214,12 +216,11 @@ export async function registerRoutes(app: FastifyInstance) {
     }
     const doc = await getDocumentByCodigo(body.codigo.trim().toUpperCase());
     if (!doc) return reply.code(404).send({ ok: false });
-    if (doc.cpf_hash && hashCpf((body.cpf ?? '').replace(/\D/g, '')) !== doc.cpf_hash) {
-      return reply.code(404).send({ ok: false });
-    }
+    const cpfConfere = !doc.cpf_hash || hashCpf((body.cpf ?? '').replace(/\D/g, '')) === doc.cpf_hash;
     return reply.send({
       ok: true,
       id: doc.id,
+      cpfConfere,
       view_url: `${publicOrigin(req)}/documentos/${doc.id}/ver`,
     });
   });
