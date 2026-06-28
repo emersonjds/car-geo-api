@@ -89,6 +89,34 @@ export async function registerRoutes(app: FastifyInstance) {
     return reply.send(doc.bytes);
   });
 
+  // Página web de visualização (pitch/desktop) — embute o PDF servido em /:id.
+  app.get<{ Params: { id: string } }>('/documentos/:id/ver', async (req, reply) => {
+    if (!UUID_RE.test(req.params.id)) {
+      return reply.code(404).type('text/html').send('<h1>Documento não encontrado</h1>');
+    }
+    const doc = await getDocument(req.params.id);
+    if (!doc) return reply.code(404).type('text/html').send('<h1>Documento não encontrado</h1>');
+    const pdf = `${publicOrigin(req)}/documentos/${req.params.id}`;
+    const nome = (doc.nome ?? 'Medição CAR Campo').replace(/[<>&"]/g, '');
+    const html = `<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${nome} · CAR Campo</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1b12;color:#e9f0ea}
+  header{display:flex;align-items:center;gap:10px;padding:14px 20px;background:#16321f}
+  header b{font-size:16px} header span{color:#9bbfa6;font-size:13px}
+  main{max-width:960px;margin:0 auto;padding:16px}
+  iframe{width:100%;height:78vh;border:0;border-radius:10px;background:#fff}
+  a.btn{display:inline-block;margin-top:12px;padding:10px 18px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:8px;font-weight:600}
+</style></head><body>
+<header><span>🌿</span><b>CAR Campo</b><span>· Medição preliminar</span></header>
+<main>
+  <iframe src="${pdf}" title="${nome}"></iframe>
+  <a class="btn" href="${pdf}" download>Baixar PDF</a>
+</main></body></html>`;
+    return reply.type('text/html').send(html);
+  });
+
   // Landing page (OGC API Features — requirement class "Core")
   app.get('/', async () => ({
     title: 'API Geoespacial Aberta do CAR',
