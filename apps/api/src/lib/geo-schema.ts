@@ -20,14 +20,29 @@ export async function ensureGeoSchema(): Promise<void> {
     const countRes = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM imovel');
     const n = countRes.rows[0]?.n ?? 0;
 
-    if (n === 0) {
-      console.log('[geo-schema] Tabela imovel vazia — executando seed...');
+    // Re-semeia se vazio OU se o dado em produção for o seed antigo (retângulos urbanos
+    // de 5 pontos). Os hexágonos rurais têm >= 7 pontos por anel — se nenhum imóvel for
+    // hexagonal, o banco está com o seed velho e precisa ser trocado.
+    // ponytail: heurística de 1 query; só dispara a migração uma vez.
+    const hexRes =
+      n === 0
+        ? null
+        : await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM imovel WHERE ST_NPoints(geom) >= 7');
+    const hex = hexRes?.rows[0]?.n ?? 0;
+
+    if (n === 0 || hex === 0) {
+      if (n > 0) {
+        console.log(`[geo-schema] Seed desatualizado (${n} imóveis não-hexagonais) — limpando para re-semear...`);
+        await pool.query('TRUNCATE imovel, app, hidrografia RESTART IDENTITY');
+      } else {
+        console.log('[geo-schema] Tabela imovel vazia — executando seed...');
+      }
       await pool.query(fs.readFileSync(sqlPath('03_seed.sql'), 'utf8'));
       const afterRes = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM imovel');
       const after = afterRes.rows[0]?.n ?? 0;
-      console.log(`[geo-schema] Seed concluído: ${after} imóveis inseridos.`);
+      console.log(`[geo-schema] Seed concluído: ${after} imóveis (hexágonos rurais).`);
     } else {
-      console.log(`[geo-schema] Seed ignorado: ${n} imóveis já presentes.`);
+      console.log(`[geo-schema] Seed ignorado: ${n} imóveis hexagonais já presentes.`);
     }
   } catch (err) {
     console.error('[geo-schema] Falha ao inicializar schema geoespacial:', err);
