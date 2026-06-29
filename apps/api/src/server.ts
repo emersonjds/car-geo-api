@@ -30,8 +30,17 @@ export async function buildApp() {
   await app.register(swaggerUi, {
     routePrefix: '/docs',
     uiConfig: { docExpansion: 'list', deepLinking: true },
-    // esconde a barra de topo do Swagger (logo do Fastify)
-    theme: { css: [{ filename: 'no-topbar.css', content: '.swagger-ui .topbar { display: none }' }] },
+    // esconde a topbar (logo do Fastify) e força tema claro (caso o SO/navegador
+    // esteja em dark mode). ponytail: não vence extensões tipo Dark Reader.
+    theme: {
+      css: [
+        {
+          filename: 'cargeo.css',
+          content:
+            ':root{color-scheme:light}html,body,.swagger-ui{background:#fff !important}.swagger-ui .topbar{display:none}',
+        },
+      ],
+    },
   });
 
   await app.register(registerRoutes);

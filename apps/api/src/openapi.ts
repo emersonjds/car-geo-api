@@ -86,7 +86,13 @@ export const openapiDocument = {
   },
   paths: {
     '/': {
-      get: { tags: ['Meta'], summary: 'Landing page', responses: { '200': { description: 'OK' } } },
+      get: {
+        tags: ['Meta'],
+        summary: 'Documento raiz da API (OGC API Features)',
+        description:
+          'Ponto de entrada da OGC API Features — documento JSON obrigatório pelo padrão, com os links para /conformance, /collections e /openapi.json. Não é uma página web.',
+        responses: { '200': { description: 'OK' } },
+      },
     },
     '/conformance': {
       get: { tags: ['Meta'], summary: 'Classes de conformidade OGC', responses: { '200': { description: 'OK' } } },
