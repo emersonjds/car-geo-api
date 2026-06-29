@@ -1,0 +1,16 @@
+name: keep-warm
+
+# Plano free do Render dorme apos ~15 min ocioso; o 1o acesso (ex.: aba /docs)
+# pega um cold start de 30-60s. Este ping a cada 14 min mantem a instancia acordada.
+# ponytail: remover se migrar para um plano always-on (pago).
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 90 https://car-geo-api.onrender.com/health
