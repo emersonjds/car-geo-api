@@ -30,6 +30,10 @@ export async function buildApp() {
   await app.register(swaggerUi, {
     routePrefix: '/docs',
     uiConfig: { docExpansion: 'list', deepLinking: true },
+    // único ajuste: esconde a topbar (logo do Fastify). Resto é Swagger padrão.
+    theme: {
+      css: [{ filename: 'cargeo.css', content: '.swagger-ui .topbar{display:none}' }],
+    },
   });
 
   await app.register(registerRoutes);
