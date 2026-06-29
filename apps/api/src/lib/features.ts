@@ -9,7 +9,11 @@ interface FeatureRow {
 }
 
 function buildSelect(col: CollectionDef): string {
-  const propsJson = col.properties.map((p) => `'${p}', t.${p}`).join(', ');
+  const pairs = [
+    ...col.properties.map((p) => `'${p}', t.${p}`),
+    ...(col.computed ?? []).map((c) => `'${c.key}', ${c.expr}`),
+  ];
+  const propsJson = pairs.join(', ');
   return `
     SELECT
       t.${col.idColumn}::text AS fid,
