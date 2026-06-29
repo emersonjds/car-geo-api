@@ -108,7 +108,14 @@ export async function registerRoutes(app: FastifyInstance) {
     }
     const doc = await getDocument(req.params.id);
     if (!doc) return reply.code(404).send({ code: 'not-found', description: 'Documento não encontrado' });
-    const safeName = (doc.nome ?? 'documento').replace(/["\r\n]/g, '').trim() || 'documento';
+    // filename vai num header HTTP (latin1): remove acentos/traços e não-ASCII,
+    // senão nomes como "São João" ou "Fazenda — X" derrubam a resposta (ERR_INVALID_CHAR).
+    const safeName =
+      (doc.nome ?? 'documento')
+        .normalize('NFKD')
+        .replace(/[^\x20-\x7E]/g, '')
+        .replace(/["\r\n]/g, '')
+        .trim() || 'documento';
     reply.header('Content-Type', doc.mime || 'application/pdf');
     reply.header('Content-Disposition', `inline; filename="${safeName}.pdf"`);
     return reply.send(doc.bytes);
@@ -169,6 +176,9 @@ export async function registerRoutes(app: FastifyInstance) {
   button{width:100%;margin-top:22px;padding:14px 18px;background:#2d5a27;color:#fff;border:0;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;transition:background .15s}
   button:hover{background:#23491f}
   #erro{margin-top:14px;color:#ba1a1a;font-size:14px;min-height:18px}
+  .exemplo{margin-top:18px;padding-top:16px;border-top:1px solid #e7eee8;text-align:center;font-size:13px;color:#5b6b5d}
+  .exemplo a{display:inline-block;margin-top:6px;color:#2d5a27;font-weight:700;text-decoration:none}
+  .exemplo a:hover{text-decoration:underline}
   footer{padding:16px;text-align:center;font-size:12px;color:#5b6b5d}
 </style></head><body>
 <header><span class="leaf">🌿</span><b>CAR Campo</b><span class="crumb">· Consulta de medição</span></header>
@@ -184,9 +194,13 @@ export async function registerRoutes(app: FastifyInstance) {
       <button type="submit">Ver medição</button>
       <div id="erro"></div>
     </form>
+    <div class="exemplo">
+      <span>Não tem o app em mãos?</span>
+      <a id="verExemplo" href="#">Ver um exemplo de medição →</a>
+    </div>
   </div>
 </main>
-<footer>CAR Campo · haCARthon — Desafio 2 · Solução 7</footer>
+<footer>CAR Campo Geo API · haCARthon — Desafio 2 · Solução 7</footer>
 <script>
   // Máscara de CPF: formata 000.000.000-00 enquanto digita (server ignora a pontuação).
   var cpfEl = document.getElementById('cpf');
@@ -197,6 +211,20 @@ export async function registerRoutes(app: FastifyInstance) {
     else if (d.length > 6) out = d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
     else if (d.length > 3) out = d.slice(0,3)+'.'+d.slice(3);
     cpfEl.value = out;
+  });
+  // Atalho de demonstração: abre o documento de exemplo (código fixo CAMP24)
+  // pelo mesmo fluxo de consulta, sem precisar do app.
+  document.getElementById('verExemplo').addEventListener('click', async function (e) {
+    e.preventDefault();
+    try {
+      var r = await fetch('/consulta/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: 'CAMP24' }),
+      });
+      var data = await r.json();
+      if (data.ok) location.href = data.view_url;
+    } catch (_) { /* sem-op: exemplo é best-effort */ }
   });
   document.getElementById('f').addEventListener('submit', async function (e) {
     e.preventDefault();
