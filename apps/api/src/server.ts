@@ -50,16 +50,28 @@ export async function buildApp() {
 
 async function main() {
   const app = await buildApp();
+
+  // Abre a porta ANTES do bootstrap de banco: o Render detecta a porta na hora
+  // e o healthcheck /health passa, mesmo se o Postgres estiver lento. Antes, o
+  // listen só ocorria após o seed — banco lento/travado = "no open ports detected".
   try {
-    await ensureGeoSchema();      // garante extensões PostGIS, schema e seed (idempotente)
-    await ensureApiKeySchema();   // garante a tabela de chaves (idempotente)
-    await ensureDocumentSchema(); // garante a tabela de documentos (idempotente)
-    await ensureExampleDocument(); // semeia o documento de exemplo (consulta CAMP24)
     await app.listen({ host: config.host, port: config.port });
     app.log.info(`CAR Geo API ouvindo em ${config.baseUrl} — docs em ${config.baseUrl}/docs`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
+  }
+
+  // Bootstrap idempotente do schema/seed roda depois, sem bloquear a porta.
+  // Falha aqui (ex.: Postgres sem PostGIS) é logada e NÃO derruba a API — os
+  // endpoints que dependem do schema é que vão falhar, não o serviço inteiro.
+  try {
+    await ensureGeoSchema();      // garante extensões PostGIS, schema e seed (idempotente)
+    await ensureApiKeySchema();   // garante a tabela de chaves (idempotente)
+    await ensureDocumentSchema(); // garante a tabela de documentos (idempotente)
+    await ensureExampleDocument(); // semeia o documento de exemplo (consulta CAMP24)
+  } catch (err) {
+    app.log.error({ err }, 'bootstrap de schema falhou — API no ar, endpoints dependentes de banco podem falhar');
   }
 }
 
