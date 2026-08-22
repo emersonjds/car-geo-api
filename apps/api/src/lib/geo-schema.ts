@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db/pool.js';
 
-// ponytail: resolve do repo (apps/api/docker/initdb/) tanto em src/ quanto em dist/
+// note: resolve do repo (apps/api/docker/initdb/) tanto em src/ quanto em dist/
 // pois ambos ficam a ../../ do arquivo; o tsc não precisa copiar os .sql.
 function sqlPath(filename: string): string {
   return fileURLToPath(new URL(`../../docker/initdb/${filename}`, import.meta.url));
@@ -23,7 +23,7 @@ export async function ensureGeoSchema(): Promise<void> {
     // Re-semeia se vazio OU se o dado em produção for o seed antigo (retângulos urbanos
     // de 5 pontos). Os hexágonos rurais têm >= 7 pontos por anel — se nenhum imóvel for
     // hexagonal, o banco está com o seed velho e precisa ser trocado.
-    // ponytail: heurística de 1 query; só dispara a migração uma vez.
+    // note: heurística de 1 query; só dispara a migração uma vez.
     const hexRes =
       n === 0
         ? null

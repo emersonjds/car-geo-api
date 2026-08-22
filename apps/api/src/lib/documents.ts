@@ -1,7 +1,7 @@
 import { createHash, randomInt } from 'node:crypto';
 import { query } from '../db/pool.js';
 
-// ponytail: salt fixo no código; produção usaria env (CONSULTA_SALT).
+// note: salt fixo no código; produção usaria env (CONSULTA_SALT).
 const SALT = 'car-campo-consulta-v1';
 
 /** Hash com salt do CPF (só dígitos) — CPF nunca é salvo cru (LGPD). */

@@ -572,7 +572,7 @@ function PropertyShowcaseSection({
 
 // SatPolygon — satélite (Esri export) + polígono SVG sobrepostos.
 // Alinhamento exato: img e SVG usam a mesma bbox expandida → projeção linear casa perfeitamente.
-// ponytail: preserveAspectRatio="none" + objectFit fill → ambos esticam idêntico ao container.
+// note: preserveAspectRatio="none" + objectFit fill → ambos esticam idêntico ao container.
 function SatPolygon({
   feature,
   W,
@@ -684,7 +684,7 @@ const TESTIMONIALS: Record<string, { text: string; author: string }> = {
 
 function getTestimonial(situacao: unknown): { text: string; author: string } {
   const key = typeof situacao === 'string' ? situacao.toLowerCase() : '';
-  // ponytail: Record<string,T> is typed as T not T|undefined; ?? is runtime safety only
+  // note: Record<string,T> is typed as T not T|undefined; ?? is runtime safety only
   return (TESTIMONIALS[key] as { text: string; author: string } | undefined) ?? TESTIMONIALS['pendente'];
 }
 
