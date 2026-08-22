@@ -22,7 +22,9 @@ services:
     name: car-geo-api
     runtime: node
     plan: free
-    healthCheckPath: /health
+    # `/` nao depende do Postgres; com `/health` (SELECT 1) o deploy inteiro era
+    # marcado como unhealthy quando o banco free expirava.
+    healthCheckPath: /
     buildCommand: yarn install --frozen-lockfile --production=false && yarn workspace @car-geo/api build
     startCommand: yarn workspace @car-geo/api start
     envVars:
