@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+dist
+**/dist
+*.tsbuildinfo
+.git
+.github
+.claude
+.serena
+docs
+*.log
+.env
+.env.local
