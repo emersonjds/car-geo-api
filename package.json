@@ -13,9 +13,12 @@
     "build": "yarn workspace @car-geo/api build && yarn workspace @car-geo/web build",
     "start": "yarn workspace @car-geo/api start",
     "typecheck": "yarn workspace @car-geo/api typecheck && yarn workspace @car-geo/web typecheck",
-    "db:up": "docker compose up -d",
+    "db:up": "docker compose up -d postgis",
     "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f postgis"
+    "db:logs": "docker compose logs -f postgis",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

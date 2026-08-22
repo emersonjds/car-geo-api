@@ -1,3 +1,8 @@
+# Full CAR Geo stack: database + API + portal.
+#
+#   docker compose up -d --build     everything (portal :5173, API :3000, db :5433)
+#   docker compose up -d postgis     database only (run the apps with `yarn dev`)
+#
 services:
   postgis:
     image: postgis/postgis:16-3.4
@@ -8,6 +13,7 @@ services:
       POSTGRES_PASSWORD: car
       POSTGRES_DB: car_geo
     ports:
+      # 5433 on the host so it does not collide with a local Postgres on 5432.
       - "5433:5432"
     volumes:
       - car_geo_pgdata:/var/lib/postgresql/data
@@ -17,6 +23,42 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: car-geo-api
+    restart: unless-stopped
+    environment:
+      # Inside the compose network the database answers on the service name,
+      # port 5432 -- 5433 is only the host mapping.
+      PGHOST: postgis
+      PGPORT: 5432
+      PGUSER: car
+      PGPASSWORD: car
+      PGDATABASE: car_geo
+      # Used to build the OGC HATEOAS links -- the address the browser sees.
+      BASE_URL: http://localhost:3000
+      PUBLIC_BASE_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:3000
+    container_name: car-geo-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
 
 volumes:
   car_geo_pgdata:
