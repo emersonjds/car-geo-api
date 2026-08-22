@@ -100,7 +100,7 @@ curl 'http://localhost:3000/collections/imovel/items?limit=10' \
   -H 'X-API-Key: cargeo_…'
 
 # filtrando por bounding box (minLon,minLat,maxLon,maxLat em WGS84)
-curl 'http://localhost:3000/collections/imovel/items?bbox=-55.6,-11.9,-55.4,-11.7' \
+curl 'http://localhost:3000/collections/imovel/items?bbox=-55.9,-12.0,-55.3,-11.6' \
   -H 'X-API-Key: cargeo_…'
 ```
 

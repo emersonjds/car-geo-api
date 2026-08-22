@@ -61,7 +61,7 @@ curl http://localhost:3000/collections | jq
 curl -H "X-API-Key: $KEY" 'http://localhost:3000/collections/imovel/items?limit=10' | jq
 
 # Filtro espacial por bounding box (minLon,minLat,maxLon,maxLat em WGS84)
-curl -H "X-API-Key: $KEY" 'http://localhost:3000/collections/imovel/items?bbox=-55.6,-11.9,-55.4,-11.8' | jq
+curl -H "X-API-Key: $KEY" 'http://localhost:3000/collections/imovel/items?bbox=-55.9,-12.0,-55.3,-11.6' | jq
 ```
 
 ### Abrir no QGIS
