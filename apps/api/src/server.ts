@@ -11,7 +11,7 @@ import { ensureGeoSchema } from './lib/geo-schema.js';
 
 export async function buildApp() {
   const app = Fastify({
-    trustProxy: true, // atrás do proxy do Render/CDN: confia em x-forwarded-*
+    trustProxy: true, // behind a proxy/CDN/tunnel: trust x-forwarded-*
     logger: {
       transport:
         process.env.NODE_ENV === 'production'
@@ -44,9 +44,10 @@ export async function buildApp() {
 async function main() {
   const app = await buildApp();
 
-  // Abre a porta ANTES do bootstrap de banco: o Render detecta a porta na hora
-  // e o healthcheck /health passa, mesmo se o Postgres estiver lento. Antes, o
-  // listen só ocorria após o seed — banco lento/travado = "no open ports detected".
+  // Bind the port BEFORE the database bootstrap: the port answers immediately
+  // and the healthcheck passes even when Postgres is slow (under compose the
+  // database container may still be starting). Previously listen only happened
+  // after the seed, so a slow or stuck database looked like a dead service.
   try {
     await app.listen({ host: config.host, port: config.port });
     app.log.info(`CAR Geo API ouvindo em ${config.baseUrl} — docs em ${config.baseUrl}/docs`);

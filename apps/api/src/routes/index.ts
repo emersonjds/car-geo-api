@@ -17,10 +17,11 @@ import { openapiDocument } from '../openapi.js';
 const MAX_PDF_BYTES = 8 * 1024 * 1024; // 8 MB decodificado
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Origem pública para montar o link do documento. Funciona atrás de proxy/CDN
-// (Render, Cloudflare, túnel) e em LAN: prioriza PUBLIC_BASE_URL (deploy), senão
-// deriva dos headers x-forwarded-* / host do próprio request. Nunca usa localhost
-// quando há host real — é isso que faz o link abrir em qualquer navegador.
+// Public origin used to build the document link. Works behind a proxy/CDN
+// (Cloudflare, tunnel, nginx) and on a LAN: prefers PUBLIC_BASE_URL, otherwise
+// derives it from the request's x-forwarded-* / host headers. Never falls back
+// to localhost when a real host is present -- that is what makes the link open
+// in any browser.
 function publicOrigin(req: FastifyRequest): string {
   const env = process.env.PUBLIC_BASE_URL;
   if (env) return env.replace(/\/$/, '');
@@ -253,7 +254,7 @@ export async function registerRoutes(app: FastifyInstance) {
   // Lookup da consulta — acha por código curto. O código (6 chars, gerado no
   // servidor) é o segredo de acesso; o CPF é uma conferência OPCIONAL, não bloqueia
   // (evita travar a consulta no pitch por divergência/typo de CPF).
-  // ponytail: código-only; se a privacidade exigir, reativar o gate de CPF abaixo.
+  // note: código-only; se a privacidade exigir, reativar o gate de CPF abaixo.
   app.post<{ Body: { cpf?: string; codigo?: string } }>('/consulta/lookup', async (req, reply) => {
     const body = req.body ?? {};
     if (typeof body.codigo !== 'string' || body.codigo.trim().length === 0) {
