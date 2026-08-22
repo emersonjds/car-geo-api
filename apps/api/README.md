@@ -1,91 +1,98 @@
-# 🌎 CAR Geo API — API Geoespacial Aberta do CAR
+# 🌎 CAR Geo API — Open Geospatial API for the CAR
 
-Fachada **OGC API Features** (REST + GeoJSON) sobre dados geoespaciais do **Cadastro Ambiental Rural (CAR)**.
+An **OGC API Features** facade (REST + GeoJSON) over geospatial data from Brazil's **Rural Environmental Registry (CAR)**.
 
-> **haCARthon** · Desafio 2 (*Melhorar o acesso a dados geoespaciais do CAR*) · **Solução 7** — API geoespacial aberta e padronizada.
+> **haCARthon** · Challenge 2 (*Improve access to CAR geospatial data*) · **Solution 7** — an open, standardised geospatial API.
 
-## Por que existe
+## Why it exists
 
-As fontes oficiais já publicam dados do CAR, mas de forma difícil de consumir:
+The official sources already publish CAR data, but in ways that are hard to consume:
 
-| Fonte | O que oferece | Limitação |
-|-------|---------------|-----------|
-| GeoServer do SICAR (`geoserver.car.gov.br`) | WMS/WFS, Base de Downloads (shapefile) | OGC legado (XML/GML), pesado para apps |
-| INDE (`inde.gov.br`) | Catálogo nacional de geosserviços OGC | Disperso, sem API REST unificada |
-| TerraBrasilis / INPE | PRODES, DETER (WMS/WFS) | Foco em desmatamento, não no CAR |
-| MapBiomas | Uso e cobertura do solo | Não é o cadastro |
+| Source | What it offers | Limitation |
+|--------|----------------|------------|
+| SICAR GeoServer (`geoserver.car.gov.br`) | WMS/WFS, download base (shapefile) | Legacy OGC (XML/GML), heavy for apps |
+| INDE (`inde.gov.br`) | National catalogue of OGC geoservices | Scattered, no unified REST API |
+| TerraBrasilis / INPE | PRODES, DETER (WMS/WFS) | Focused on deforestation, not the registry |
+| MapBiomas | Land use and land cover | Not the registry |
 
-**Esta API** entrega uma camada moderna **REST + GeoJSON** por cima dessas fontes — fácil de consumir em QGIS, MapLibre/Leaflet, ou qualquer app. Pensada como **Bem Público Digital**: aberta, padronizada e evolutiva.
+**This API** puts a modern **REST + GeoJSON** layer on top of those sources — easy to consume from QGIS, MapLibre/Leaflet, or any app. Built as a **Digital Public Good**: open, standardised and evolving.
 
 ## Stack
 
-Node.js + TypeScript + **Fastify** · **PostgreSQL/PostGIS** · `pg` puro · **yarn**.
+Node.js + TypeScript + **Fastify** · **PostgreSQL/PostGIS** · plain `pg` · **yarn**.
 
-## Como rodar
+## Running it
 
-Este app faz parte do monorepo. **Rode a partir da raiz** (`car-geo-api/`):
+This app is part of the monorepo. **Run it from the root** (`car-geo-api/`).
+
+Everything in containers (Docker is the only requirement):
 
 ```bash
-yarn install      # na raiz
-yarn db:up        # sobe PostGIS + schema + seed (Sinop/MT)
-yarn dev:api      # só a API em http://localhost:3000  (ou `yarn dev` para API + portal)
+docker compose up -d --build    # PostGIS + API (:3000) + portal (:5173)
 ```
 
-Endpoint table no [README da raiz](../../README.md). Documentação interativa: http://localhost:3000/docs
+Or in development mode, with hot reload (requires Node 22+ and yarn):
+
+```bash
+yarn install      # from the root
+yarn db:up        # start PostGIS only, with schema + seed (Sinop/MT)
+yarn dev:api      # API only, on http://localhost:3000  (or `yarn dev` for API + portal)
+```
+
+Endpoint table in the [root README](../../README.md). Interactive docs: http://localhost:3000/docs
 
 ## Endpoints (OGC API Features)
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/` | Landing page + links |
-| 🌐 | GET | `/conformance` | Classes de conformidade OGC |
-| 🌐 | GET | `/collections` · `/collections/{id}` | Coleções e metadados |
-| 🌐 | POST | `/keys` | Gerar chave de API |
-| 🌐 | GET | `/docs` · `/openapi.json` | Swagger UI / spec OpenAPI |
-| 🔑 | GET | `/collections/{id}/items` | Feições em **GeoJSON** (`?bbox=`, `?limit=`, `?offset=`) |
-| 🔑 | GET | `/collections/{id}/items/{fid}` | Uma feição |
+| | Method | Route | Description |
+|---|--------|-------|-------------|
+| 🌐 | GET | `/` | Landing page + links |
+| 🌐 | GET | `/conformance` | OGC conformance classes |
+| 🌐 | GET | `/collections` · `/collections/{id}` | Collections and metadata |
+| 🌐 | POST | `/keys` | Generate an API key |
+| 🌐 | GET | `/docs` · `/openapi.json` | Swagger UI / OpenAPI spec |
+| 🔑 | GET | `/collections/{id}/items` | Features as **GeoJSON** (`?bbox=`, `?limit=`, `?offset=`) |
+| 🔑 | GET | `/collections/{id}/items/{fid}` | A single feature |
 | 🌐 | GET | `/health` | Health check |
 
-🌐 = público · 🔑 = exige header `X-API-Key`. Coleções: `imovel`, `app` (APP), `hidrografia`.
+🌐 = public · 🔑 = requires the `X-API-Key` header. Collections: `imovel`, `app` (APP), `hidrografia`.
 
-### Exemplos
+### Examples
 
 ```bash
-# 1) Gere sua chave (uma vez)
+# 1) Generate your key (once)
 KEY=$(curl -s -X POST http://localhost:3000/keys -d '{}' -H 'Content-Type: application/json' | jq -r .key)
 
-# Coleções disponíveis (público)
+# Available collections (public)
 curl http://localhost:3000/collections | jq
 
-# Imóveis em GeoJSON (com chave)
+# Properties as GeoJSON (with a key)
 curl -H "X-API-Key: $KEY" 'http://localhost:3000/collections/imovel/items?limit=10' | jq
 
-# Filtro espacial por bounding box (minLon,minLat,maxLon,maxLat em WGS84)
+# Spatial filter by bounding box (minLon,minLat,maxLon,maxLat in WGS84)
 curl -H "X-API-Key: $KEY" 'http://localhost:3000/collections/imovel/items?bbox=-55.9,-12.0,-55.3,-11.6' | jq
 ```
 
-### Abrir no QGIS
+### Opening it in QGIS
 
 `Layer → Add Layer → Add WFS / OGC API Features Layer` → URL `http://localhost:3000`.
 
-## Padrões geoespaciais
+## Geospatial standards
 
-- Armazenamento em **SIRGAS 2000 (EPSG:4674)**; saída GeoJSON em **WGS84 (EPSG:4326)**.
-- Índices **GIST**; filtro espacial via bounding box (`&&`).
+- Stored in **SIRGAS 2000 (EPSG:4674)**; GeoJSON output in **WGS84 (EPSG:4326)**.
+- **GIST** indexes; spatial filtering through a bounding box (`&&`).
 
-## Como adicionar uma nova camada
+## Adding a new layer
 
-Adicione uma entrada em [`src/lib/collections.ts`](src/lib/collections.ts) apontando para a tabela/coluna de geometria. As rotas passam a servi-la automaticamente.
+Add an entry to [`src/lib/collections.ts`](src/lib/collections.ts) pointing at the table and geometry column. The routes serve it automatically from then on.
 
-## Roadmap (próximos passos)
+## Roadmap
 
-- [ ] Job de ingestão a partir do WFS do SICAR e da Base de Downloads
-- [ ] Camadas de referência (UC, TI, hidrografia ANA, MDE)
-- [ ] Derivação automática de APP (buffer de hidrografia + MDE) — ver agente `geo`
-- [ ] Detecção de sobreposições (imóvel × UC/TI × outro imóvel)
-- [ ] Cache (ETag/`Cache-Control`), rate-limit e paginação por cursor
-- [ ] OpenAPI 3 + Swagger UI
+- [ ] Ingestion job from SICAR's WFS and download base
+- [ ] Reference layers (conservation units, indigenous land, ANA hydrography, DEM)
+- [ ] Automatic APP derivation (hydrography buffer + DEM) — see the `geo` agent
+- [ ] Overlap detection (property × conservation unit / indigenous land / other properties)
+- [ ] Caching (ETag/`Cache-Control`), rate limiting and cursor pagination
 
-## Licença
+## License
 
-A definir (recomendado: MIT ou similar, por ser Bem Público Digital).
+MIT
