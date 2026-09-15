@@ -61,3 +61,10 @@ yarn db:down        # derruba o banco
 
 `.claude/agents/`: **arq**, **back**, **geo**, **bug**, **redteam**, **scribe** (adaptados ao domínio CAR/geo).
 MCP: `serena`, `context-mode`, `context7` (`.mcp.json`).
+
+## Contexto operacional
+
+- Nota do vault: `second-brain/Projects/hacarton.md` (histórico, decisões, porquês)
+- Grafo indexado no codebase-memory: sim (as of 2026-09-15)
+- Sem scripts de `test`/`lint` em nenhum workspace hoje — cobertura das regras globais ainda não implantada aqui.
+- Subprojeto irmão `car-campo-app` (mesma pasta pai) está pausado — não assumir integração ativa.
